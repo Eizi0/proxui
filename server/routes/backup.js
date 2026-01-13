@@ -297,4 +297,194 @@ router.put('/notes/:node/:storage/:volid', async (req, res) => {
   }
 });
 
+// ========== BACKUP JOBS (SCHEDULING) ==========
+
+// Get all backup jobs
+router.get('/jobs', async (req, res) => {
+  try {
+    const jobs = await proxmoxAPI.request('GET', '/cluster/backup');
+    res.json(jobs || []);
+  } catch (error) {
+    console.error('Error fetching backup jobs:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get specific backup job
+router.get('/jobs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const job = await proxmoxAPI.request('GET', `/cluster/backup/${id}`);
+    res.json(job);
+  } catch (error) {
+    console.error('Error fetching backup job:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create backup job
+router.post('/jobs', async (req, res) => {
+  try {
+    const {
+      vmid,           // VM/CT ID or 'all'
+      node,           // Node name or 'all'
+      storage,        // Storage target
+      schedule,       // Cron expression
+      enabled = true, // Job enabled
+      mode = 'snapshot', // snapshot, suspend, stop
+      compress = 'zstd', // zstd, lzo, gzip
+      dow = '*',      // Day of week (0-6 or *)
+      starttime = '02:00', // Start time HH:MM
+      mailnotification = 'failure', // always, failure
+      mailto,         // Email recipients
+      prune,          // Prune old backups
+      repeatMissed = false,
+      comment
+    } = req.body;
+
+    if (!storage) {
+      return res.status(400).json({ error: 'storage is required' });
+    }
+
+    const jobData = {
+      vmid: vmid || 'all',
+      node: node || 'all',
+      storage,
+      enabled: enabled ? 1 : 0,
+      mode,
+      compress,
+      dow,
+      starttime,
+      mailnotification,
+      'repeat-missed': repeatMissed ? 1 : 0
+    };
+
+    if (schedule) jobData.schedule = schedule;
+    if (mailto) jobData.mailto = mailto;
+    if (prune !== undefined) jobData.prune = prune;
+    if (comment) jobData.comment = comment;
+
+    const result = await proxmoxAPI.request('POST', '/cluster/backup', jobData);
+    
+    res.json({
+      success: true,
+      id: result,
+      message: 'Backup job created successfully'
+    });
+  } catch (error) {
+    console.error('Error creating backup job:', error);
+    res.status(500).json({ 
+      error: error.message,
+      details: error.response?.data 
+    });
+  }
+});
+
+// Update backup job
+router.put('/jobs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      vmid,
+      node,
+      storage,
+      schedule,
+      enabled,
+      mode,
+      compress,
+      dow,
+      starttime,
+      mailnotification,
+      mailto,
+      prune,
+      'repeat-missed': repeatMissed,
+      comment,
+      delete: deleteFields
+    } = req.body;
+
+    const jobData = {};
+    
+    if (vmid !== undefined) jobData.vmid = vmid;
+    if (node !== undefined) jobData.node = node;
+    if (storage !== undefined) jobData.storage = storage;
+    if (enabled !== undefined) jobData.enabled = enabled ? 1 : 0;
+    if (mode !== undefined) jobData.mode = mode;
+    if (compress !== undefined) jobData.compress = compress;
+    if (dow !== undefined) jobData.dow = dow;
+    if (starttime !== undefined) jobData.starttime = starttime;
+    if (schedule !== undefined) jobData.schedule = schedule;
+    if (mailnotification !== undefined) jobData.mailnotification = mailnotification;
+    if (mailto !== undefined) jobData.mailto = mailto;
+    if (prune !== undefined) jobData.prune = prune;
+    if (repeatMissed !== undefined) jobData['repeat-missed'] = repeatMissed ? 1 : 0;
+    if (comment !== undefined) jobData.comment = comment;
+    if (deleteFields !== undefined) jobData.delete = deleteFields;
+
+    await proxmoxAPI.request('PUT', `/cluster/backup/${id}`, jobData);
+    
+    res.json({
+      success: true,
+      message: 'Backup job updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating backup job:', error);
+    res.status(500).json({ 
+      error: error.message,
+      details: error.response?.data 
+    });
+  }
+});
+
+// Delete backup job
+router.delete('/jobs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    await proxmoxAPI.request('DELETE', `/cluster/backup/${id}`);
+    
+    res.json({
+      success: true,
+      message: 'Backup job deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting backup job:', error);
+    res.status(500).json({ 
+      error: error.message,
+      details: error.response?.data 
+    });
+  }
+});
+
+// Run backup job immediately
+router.post('/jobs/:id/run', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get job details first
+    const job = await proxmoxAPI.request('GET', `/cluster/backup/${id}`);
+    
+    // Extract node from job
+    const node = job.node === 'all' ? 'proxmox' : job.node;
+    
+    // Trigger backup job execution
+    const result = await proxmoxAPI.request(
+      'POST', 
+      `/nodes/${node}/startall`,
+      { force: 1 }
+    );
+    
+    res.json({
+      success: true,
+      upid: result,
+      message: 'Backup job execution started'
+    });
+  } catch (error) {
+    console.error('Error running backup job:', error);
+    res.status(500).json({ 
+      error: error.message,
+      details: error.response?.data 
+    });
+  }
+});
+
 export default router;

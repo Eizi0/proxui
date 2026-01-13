@@ -271,7 +271,7 @@ export default function Backups() {
             <RefreshCw size={16} className="mr-2" />
             Actualiser
           </button>
-          <button onClick={() => navigate('/management/backup-scheduling')} className="btn btn-secondary">
+          <button onClick={() => navigate('/backup-scheduling')} className="btn btn-secondary">
             <Calendar size={16} className="mr-2" />
             Planifications
           </button>
