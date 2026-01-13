@@ -240,7 +240,7 @@ export default function Backups() {
               </div>
 
               <button 
-                onClick={() => navigate('/management/settings')} 
+                onClick={() => navigate('/settings')} 
                 className="btn btn-primary"
               >
                 <Settings size={16} className="mr-2" />
@@ -308,7 +308,7 @@ export default function Backups() {
                 </div>
               </div>
               <button 
-                onClick={() => navigate('/management/settings')} 
+                onClick={() => navigate('/settings')} 
                 className="text-yellow-400 hover:text-yellow-300 text-sm font-medium flex items-center transition-colors"
               >
                 <Settings size={14} className="mr-1" />
