@@ -13,6 +13,7 @@ import configRoutes from './routes/config.js';
 import downloadsRoutes from './routes/downloads.js';
 import networkRoutes from './routes/network.js';
 import backupRoutes from './routes/backup.js';
+import snapshotsRoutes from './routes/snapshots.js';
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.use('/api/config', configRoutes);
 app.use('/api/downloads', downloadsRoutes);
 app.use('/api/networks', networkRoutes);
 app.use('/api/backups', backupRoutes);
+app.use('/api/snapshots', snapshotsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

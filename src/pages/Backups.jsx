@@ -188,8 +188,8 @@ export default function Backups() {
     </div>;
   }
 
-  // Show setup warning if no backup storage configured
-  if (pbsStatus && !pbsStatus.configured && pbsStatus.backupStorages.length === 0) {
+  // Show critical warning if NO backup storage at all
+  if (pbsStatus && pbsStatus.backupStorages.length === 0) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -199,14 +199,14 @@ export default function Backups() {
           </div>
         </div>
 
-        <div className="card bg-yellow-500/10 border-yellow-500/50">
+        <div className="card bg-red-500/10 border-red-500/50">
           <div className="flex items-start space-x-4">
-            <AlertCircle size={48} className="text-yellow-500 flex-shrink-0" />
+            <AlertCircle size={48} className="text-red-500 flex-shrink-0" />
             <div className="flex-1">
-              <h3 className="text-xl font-bold text-white mb-2">Configuration Backup Requise</h3>
+              <h3 className="text-xl font-bold text-white mb-2">⚠️ Configuration Backup Requise</h3>
               <p className="text-slate-300 mb-4">
-                Aucun stockage de backup n'est configuré. Pour utiliser le système de backup professionnel, 
-                vous devez configurer au moins un stockage backup (local, NFS, ou Proxmox Backup Server).
+                <strong>Aucun stockage de backup n'est configuré !</strong> Vous devez configurer au moins un stockage 
+                avec le type de contenu "backup" activé pour pouvoir créer des sauvegardes.
               </p>
               
               <div className="bg-slate-800/50 rounded-lg p-4 mb-4 border border-slate-700">
@@ -281,6 +281,43 @@ export default function Backups() {
           </button>
         </div>
       </div>
+
+      {/* PBS Recommendation Banner */}
+      {pbsStatus && !pbsStatus.configured && pbsStatus.backupStorages.length > 0 && (
+        <div className="card bg-yellow-500/10 border-yellow-500/50">
+          <div className="flex items-start space-x-3">
+            <AlertCircle size={24} className="text-yellow-500 flex-shrink-0 mt-1" />
+            <div className="flex-1">
+              <h4 className="text-white font-semibold mb-1">💡 Recommandation : Proxmox Backup Server</h4>
+              <p className="text-slate-300 text-sm mb-3">
+                Vous utilisez actuellement un stockage local <strong>({pbsStatus.backupStorages.map(s => s.storage).join(', ')})</strong> pour vos backups.
+                Pour une solution professionnelle de datacenter, considérez <strong>Proxmox Backup Server (PBS)</strong> :
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                <div className="bg-slate-800/30 rounded p-2 border border-slate-700/50">
+                  <div className="text-green-400 text-xs font-semibold mb-1">✓ Déduplication</div>
+                  <div className="text-slate-400 text-xs">Économie d'espace massive</div>
+                </div>
+                <div className="bg-slate-800/30 rounded p-2 border border-slate-700/50">
+                  <div className="text-green-400 text-xs font-semibold mb-1">✓ Vérification</div>
+                  <div className="text-slate-400 text-xs">Intégrité garantie</div>
+                </div>
+                <div className="bg-slate-800/30 rounded p-2 border border-slate-700/50">
+                  <div className="text-green-400 text-xs font-semibold mb-1">✓ Chiffrement</div>
+                  <div className="text-slate-400 text-xs">Sécurité renforcée</div>
+                </div>
+              </div>
+              <button 
+                onClick={() => navigate('/management/settings')} 
+                className="text-yellow-400 hover:text-yellow-300 text-sm font-medium flex items-center transition-colors"
+              >
+                <Settings size={14} className="mr-1" />
+                Configurer PBS dans Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
