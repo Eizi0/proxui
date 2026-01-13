@@ -1,6 +1,10 @@
 import express from 'express';
 import proxmoxAPI from '../services/proxmoxAPI.js';
 import axios from 'axios';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 const router = express.Router();
 
@@ -326,30 +330,61 @@ async function pullDockerImage(downloadId, image, tag) {
     const item = downloads.find(d => d.id === downloadId);
     const fullImageName = `${image}:${tag}`;
     
-    console.log(`📥 Démarrage pull Docker: ${fullImageName}`);
-    console.log(`⚠️  Note: Docker n'est pas natif dans Proxmox`);
-    console.log(`   Les images Docker doivent être pullées dans un container LXC avec Docker installé`);
+    console.log(`📥 Démarrage pull Docker réel: ${fullImageName}`);
     
-    // This would execute docker pull on a node with Docker
-    // For now, simulate the pull since Docker is not native to Proxmox
-    // In production, this should execute on a Docker host or LXC container
-    for (let i = 0; i <= 100; i += 20) {
-      if (item) {
-        item.progress = i;
-        console.log(`   Progress: ${i}%`);
-      }
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    if (item) {
+      item.progress = 10;
+      item.status = 'downloading';
     }
 
-    if (item) {
-      item.status = 'completed';
-      item.progress = 100;
+    // Execute docker pull on localhost (Proxmox server)
+    // Note: This assumes the Node.js server is running on the Proxmox host
+    const pullCommand = `docker pull ${fullImageName}`;
+    console.log(`🐳 Executing: ${pullCommand}`);
+    
+    if (item) item.progress = 25;
+
+    const { stdout, stderr } = await execAsync(pullCommand);
+    
+    console.log(`📦 Docker pull output:`);
+    if (stdout) console.log(stdout);
+    if (stderr) console.log(`   stderr: ${stderr}`);
+
+    if (item) item.progress = 75;
+
+    // Verify the image was pulled successfully
+    const verifyCommand = `docker images ${image} --format "{{.Repository}}:{{.Tag}}"`;
+    const { stdout: verifyOutput } = await execAsync(verifyCommand);
+    
+    if (verifyOutput.includes(fullImageName)) {
+      console.log(`✅ Docker image pullée avec succès: ${fullImageName}`);
+      
+      // Get image details
+      const inspectCommand = `docker inspect ${fullImageName} --format "{{.Size}}"`;
+      const { stdout: sizeOutput } = await execAsync(inspectCommand);
+      const sizeBytes = parseInt(sizeOutput.trim());
+      const sizeMB = (sizeBytes / (1024 * 1024)).toFixed(2);
+      
+      if (item) {
+        item.status = 'completed';
+        item.progress = 100;
+        item.size = `${sizeMB} MB`;
+        item.completed = new Date();
+      }
+      
+      console.log(`   Taille: ${sizeMB} MB`);
+      console.log(`   Vérification: docker images | grep ${image}`);
+    } else {
+      throw new Error('Image non trouvée après le pull');
     }
     
-    console.log(`✅ Pull Docker simulé complété: ${fullImageName}`);
-    console.log(`   Pour utiliser Docker, créez un container LXC avec Docker installé`);
   } catch (error) {
-    console.error(`❌ Erreur pull Docker:`, error);
+    console.error(`❌ Erreur pull Docker:`, error.message);
+    const item = downloads.find(d => d.id === downloadId);
+    if (item) {
+      item.status = 'error';
+      item.error = error.message;
+    }
     throw error;
   }
 }
