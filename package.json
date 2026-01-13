@@ -1,0 +1,41 @@
+{
+  "name": "proxui",
+  "version": "1.0.0",
+  "description": "Interface web moderne pour gérer Proxmox - déployable en Docker ou LXC",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "server:dev": "nodemon server/index.js",
+    "client:dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node server/index.js"
+  },
+  "keywords": ["proxmox", "lxc", "docker", "webui", "management"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "dockerode": "^4.0.2",
+    "ws": "^8.16.0",
+    "express-ws": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.2",
+    "postcss": "^8.4.32",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.21.0",
+    "tailwindcss": "^3.4.0",
+    "vite": "^5.0.8",
+    "lucide-react": "^0.303.0"
+  }
+}

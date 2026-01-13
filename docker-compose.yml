@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  proxui:
+    build: .
+    container_name: proxui
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env
+    volumes:
+      # Accès au socket Docker de l'hôte
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    networks:
+      - proxui-network
+    labels:
+      - "com.proxui.description=ProxUI Web Interface"
+
+networks:
+  proxui-network:
+    driver: bridge
