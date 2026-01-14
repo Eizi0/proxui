@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Play, Square, RotateCw, Server } from 'lucide-react';
+import { Play, Square, RotateCw, Server, Settings } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { translate } from '../i18n/translations';
+import EditVMModal from '../components/EditVMModal';
 
 export default function VMs() {
   const { language } = useApp();
   const [vms, setVMs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingVM, setEditingVM] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     fetchVMs();
@@ -36,6 +39,15 @@ export default function VMs() {
     }
   };
 
+  const handleEdit = (vmid) => {
+    setEditingVM(vmid);
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = () => {
+    fetchVMs();
+  };
+
   if (loading) {
     return <div className="flex justify-center items-center h-full">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-proxmox-600"></div>
@@ -57,7 +69,7 @@ export default function VMs() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {vms.map((vm) => (
-          <VMCard key={vm.vmid} vm={vm} onAction={handleAction} language={language} />
+          <VMCard key={vm.vmid} vm={vm} onAction={handleAction} onEdit={handleEdit} language={language} />
         ))}
       </div>
 
@@ -67,11 +79,18 @@ export default function VMs() {
           <p className="text-slate-400">{translate('vms.none', language)}</p>
         </div>
       )}
+
+      <EditVMModal
+        vmid={editingVM}
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 }
 
-function VMCard({ vm, onAction, language }) {
+function VMCard({ vm, onAction, onEdit, language }) {
   const isRunning = vm.status === 'running';
 
   return (
@@ -99,6 +118,12 @@ function VMCard({ vm, onAction, language }) {
           <span className="text-slate-400">Disque:</span>
           <span>{Math.round((vm.maxdisk || 0) / 1024 / 1024 / 1024)} GB</span>
         </div>
+        {vm.agent && vm['net0'] && (
+          <div className="flex justify-between">
+            <span className="text-slate-400">IP:</span>
+            <span className="text-xs font-mono">{vm['net0'] || 'N/A'}</span>
+          </div>
+        )}
         {isRunning && vm.cpu && (
           <div className="flex justify-between">
             <span className="text-slate-400">CPU Usage:</span>
@@ -108,6 +133,13 @@ function VMCard({ vm, onAction, language }) {
       </div>
 
       <div className="flex space-x-2">
+        <button
+          onClick={() => onEdit(vm.vmid)}
+          className="btn btn-secondary"
+          title="Éditer la configuration"
+        >
+          <Settings size={16} />
+        </button>
         {!isRunning ? (
           <button
             onClick={() => onAction(vm.vmid, 'start')}

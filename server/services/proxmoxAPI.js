@@ -157,6 +157,21 @@ class ProxmoxAPI {
     return this.request('POST', `/nodes/${node}/qemu/${vmid}/status/reboot`);
   }
 
+  async getVMConfig(vmid, node = this.node) {
+    return this.request('GET', `/nodes/${node}/qemu/${vmid}/config`);
+  }
+
+  async updateVMConfig(vmid, config, node = this.node) {
+    return this.request('PUT', `/nodes/${node}/qemu/${vmid}/config`, config);
+  }
+
+  async resizeVMDisk(vmid, disk, size, node = this.node) {
+    return this.request('PUT', `/nodes/${node}/qemu/${vmid}/resize`, {
+      disk,
+      size
+    });
+  }
+
   // LXC Containers
   async getLXCs(node = this.node) {
     return this.request('GET', `/nodes/${node}/lxc`);
@@ -180,6 +195,25 @@ class ProxmoxAPI {
 
   async rebootLXC(vmid, node = this.node) {
     return this.request('POST', `/nodes/${node}/lxc/${vmid}/status/reboot`);
+  }
+
+  async getLXCConfig(vmid, node = this.node) {
+    return this.request('GET', `/nodes/${node}/lxc/${vmid}/config`);
+  }
+
+  async updateLXCConfig(vmid, config, node = this.node) {
+    return this.request('PUT', `/nodes/${node}/lxc/${vmid}/config`, config);
+  }
+
+  async resizeLXCDisk(vmid, disk, size, node = this.node) {
+    return this.request('PUT', `/nodes/${node}/lxc/${vmid}/resize`, {
+      disk,
+      size
+    });
+  }
+
+  async createLXC(node, config) {
+    return this.request('POST', `/nodes/${node}/lxc`, config);
   }
 
   // Resources
@@ -241,8 +275,22 @@ class ProxmoxAPI {
     return this.request('GET', `/nodes/${node}/network`);
   }
 
+  async getNodeNetwork(node) {
+    return this.request('GET', `/nodes/${node}/network`);
+  }
+
   async getNetworkConfig(iface, node = this.node) {
     return this.request('GET', `/nodes/${node}/network/${iface}`);
+  }
+
+  // Node storage
+  async getNodeStorage(node) {
+    return this.request('GET', `/nodes/${node}/storage`);
+  }
+
+  // Create VM
+  async createVM(node, config) {
+    return this.request('POST', `/nodes/${node}/qemu`, config);
   }
 
   // Node Details

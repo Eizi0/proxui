@@ -101,6 +101,37 @@ router.get('/images', async (req, res) => {
   }
 });
 
+// Pull image
+router.post('/images/pull', async (req, res) => {
+  try {
+    const { image } = req.body;
+    if (!image) {
+      return res.status(400).json({ error: 'Image name is required' });
+    }
+    console.log('📥 Pulling Docker image:', image);
+    const result = await dockerAPI.pullImage(image);
+    console.log('✅ Image pulled successfully');
+    res.json({ success: true, result });
+  } catch (error) {
+    console.error('❌ Error pulling image:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create container
+router.post('/containers', async (req, res) => {
+  try {
+    console.log('📡 API Call: POST /api/docker/containers');
+    console.log('📋 Container Config:', JSON.stringify(req.body, null, 2));
+    const container = await dockerAPI.createContainer(req.body);
+    console.log('✅ Docker container created successfully');
+    res.json(container);
+  } catch (error) {
+    console.error('❌ Error creating container:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get Docker info
 router.get('/info', async (req, res) => {
   try {
@@ -117,6 +148,44 @@ router.get('/version', async (req, res) => {
     const version = await dockerAPI.getDockerVersion();
     res.json(version);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Stack management endpoints
+router.get('/stacks', async (req, res) => {
+  try {
+    console.log('📡 API Call: GET /api/docker/stacks');
+    const stacks = await dockerAPI.listStacks();
+    console.log(`✅ Found ${stacks.length} stacks`);
+    res.json(stacks);
+  } catch (error) {
+    console.error('❌ Error listing stacks:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/stacks', async (req, res) => {
+  try {
+    console.log('📡 API Call: POST /api/docker/stacks');
+    console.log('📋 Stack Config:', JSON.stringify(req.body, null, 2));
+    const result = await dockerAPI.deployStack(req.body);
+    console.log('✅ Stack deployed successfully');
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error deploying stack:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/stacks/:name', async (req, res) => {
+  try {
+    console.log('📡 API Call: DELETE /api/docker/stacks/:name');
+    const result = await dockerAPI.removeStack(req.params.name);
+    console.log('✅ Stack removed successfully');
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error removing stack:', error.message);
     res.status(500).json({ error: error.message });
   }
 });

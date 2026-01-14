@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Play, Square, RotateCw, Trash2, Box, Container } from 'lucide-react';
+import { Play, Square, RotateCw, Trash2, Box, Container, Settings } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { translate } from '../i18n/translations';
+import EditLXCModal from '../components/EditLXCModal';
 
 export default function Containers() {
   const { language } = useApp();
@@ -10,6 +11,8 @@ export default function Containers() {
   const [dockerContainers, setDockerContainers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dockerAvailable, setDockerAvailable] = useState(true);
+  const [editingContainer, setEditingContainer] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     fetchContainers();
@@ -54,6 +57,15 @@ export default function Containers() {
     } catch (error) {
       console.error(`Error ${action} LXC:`, error);
     }
+  };
+
+  const handleEditLXC = (vmid) => {
+    setEditingContainer(vmid);
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = () => {
+    fetchContainers();
   };
 
   const handleDockerAction = async (id, action) => {
@@ -115,7 +127,7 @@ export default function Containers() {
       {activeTab === 'lxc' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {lxcContainers.map((container) => (
-            <LXCCard key={container.vmid} container={container} onAction={handleLXCAction} language={language} />
+            <LXCCard key={container.vmid} container={container} onAction={handleLXCAction} onEdit={handleEditLXC} language={language} />
           ))}
           {lxcContainers.length === 0 && (
             <div className="col-span-full card text-center py-12">
@@ -147,11 +159,18 @@ export default function Containers() {
           )}
         </>
       )}
+
+      <EditLXCModal
+        vmid={editingContainer}
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 }
 
-function LXCCard({ container, onAction }) {
+function LXCCard({ container, onAction, onEdit }) {
   const isRunning = container.status === 'running';
 
   return (
@@ -179,9 +198,22 @@ function LXCCard({ container, onAction }) {
           <span className="text-slate-400">Disque:</span>
           <span>{Math.round((container.maxdisk || 0) / 1024 / 1024 / 1024)} GB</span>
         </div>
+        {container['net0'] && (
+          <div className="flex justify-between">
+            <span className="text-slate-400">IP:</span>
+            <span className="text-xs font-mono">{container['net0'] || 'N/A'}</span>
+          </div>
+        )}
       </div>
 
       <div className="flex space-x-2">
+        <button
+          onClick={() => onEdit(container.vmid)}
+          className="btn btn-secondary"
+          title="Éditer la configuration"
+        >
+          <Settings size={16} />
+        </button>
         {!isRunning ? (
           <button onClick={() => onAction(container.vmid, 'start')} className="btn btn-success flex-1">
             <Play size={16} className="inline mr-1" />
@@ -206,6 +238,14 @@ function LXCCard({ container, onAction }) {
 function DockerCard({ container, onAction }) {
   const isRunning = container.State === 'running';
   const name = container.Names[0]?.replace('/', '') || 'Unknown';
+  
+  // Extract ports
+  const ports = container.Ports?.map(p => {
+    if (p.PublicPort) {
+      return `${p.PublicPort}:${p.PrivatePort}`;
+    }
+    return `${p.PrivatePort}`;
+  }).join(', ') || 'Aucun';
 
   return (
     <div className="card">
@@ -223,6 +263,10 @@ function DockerCard({ container, onAction }) {
         <div className="flex justify-between">
           <span className="text-slate-400">Image:</span>
           <span className="truncate ml-2">{container.Image}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-400">Ports:</span>
+          <span className="text-xs font-mono">{ports}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-slate-400">Créé:</span>

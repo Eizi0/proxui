@@ -28,6 +28,60 @@ router.get('/nodes/:node/status', async (req, res) => {
   }
 });
 
+// Get node storage
+router.get('/nodes/:node/storage', async (req, res) => {
+  try {
+    console.log('📡 API Call: GET /api/proxmox/nodes/:node/storage');
+    const storages = await proxmoxAPI.getNodeStorage(req.params.node);
+    console.log('✅ Storages récupérés pour node:', req.params.node, ':', storages.length);
+    res.json(storages);
+  } catch (error) {
+    console.error('❌ Erreur GET /nodes/:node/storage:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get storage content for a specific node
+router.get('/nodes/:node/storage/:storage/content', async (req, res) => {
+  try {
+    console.log('📡 API Call: GET /api/proxmox/nodes/:node/storage/:storage/content');
+    const { content } = req.query;
+    const data = await proxmoxAPI.getStorageContent(req.params.storage, req.params.node, content);
+    console.log('✅ Contenu récupéré pour storage:', req.params.storage, ':', data.length);
+    res.json(data);
+  } catch (error) {
+    console.error('❌ Erreur GET /nodes/:node/storage/:storage/content:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get node network interfaces
+router.get('/nodes/:node/network', async (req, res) => {
+  try {
+    console.log('📡 API Call: GET /api/proxmox/nodes/:node/network');
+    const networks = await proxmoxAPI.getNodeNetwork(req.params.node);
+    console.log('✅ Interfaces réseau récupérées pour node:', req.params.node, ':', networks.length);
+    res.json(networks);
+  } catch (error) {
+    console.error('❌ Erreur GET /nodes/:node/network:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create VM on specific node
+router.post('/nodes/:node/qemu', async (req, res) => {
+  try {
+    console.log('📡 API Call: POST /api/proxmox/nodes/:node/qemu');
+    console.log('📋 VM Config:', JSON.stringify(req.body, null, 2));
+    const result = await proxmoxAPI.createVM(req.params.node, req.body);
+    console.log('✅ VM créée avec succès');
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Erreur POST /nodes/:node/qemu:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get all VMs
 router.get('/vms', async (req, res) => {
   try {
@@ -90,6 +144,46 @@ router.post('/vms/:vmid/reboot', async (req, res) => {
   }
 });
 
+// Get VM config
+router.get('/vms/:vmid/config', async (req, res) => {
+  try {
+    console.log('📡 API Call: GET /api/proxmox/vms/:vmid/config');
+    const config = await proxmoxAPI.getVMConfig(req.params.vmid);
+    res.json(config);
+  } catch (error) {
+    console.error('❌ Erreur GET /vms/:vmid/config:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update VM config
+router.put('/vms/:vmid/config', async (req, res) => {
+  try {
+    console.log('📡 API Call: PUT /api/proxmox/vms/:vmid/config');
+    console.log('📋 Update Config:', JSON.stringify(req.body, null, 2));
+    const result = await proxmoxAPI.updateVMConfig(req.params.vmid, req.body);
+    console.log('✅ VM config updated successfully');
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Erreur PUT /vms/:vmid/config:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Resize VM disk
+router.put('/vms/:vmid/resize', async (req, res) => {
+  try {
+    console.log('📡 API Call: PUT /api/proxmox/vms/:vmid/resize');
+    const { disk, size } = req.body;
+    const result = await proxmoxAPI.resizeVMDisk(req.params.vmid, disk, size);
+    console.log('✅ VM disk resized successfully');
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Erreur PUT /vms/:vmid/resize:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get all LXC containers
 router.get('/lxc', async (req, res) => {
   try {
@@ -146,6 +240,60 @@ router.post('/lxc/:vmid/reboot', async (req, res) => {
     const result = await proxmoxAPI.rebootLXC(req.params.vmid);
     res.json({ success: true, data: result });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get LXC config
+router.get('/lxc/:vmid/config', async (req, res) => {
+  try {
+    console.log('📡 API Call: GET /api/proxmox/lxc/:vmid/config');
+    const config = await proxmoxAPI.getLXCConfig(req.params.vmid);
+    res.json(config);
+  } catch (error) {
+    console.error('❌ Erreur GET /lxc/:vmid/config:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update LXC config
+router.put('/lxc/:vmid/config', async (req, res) => {
+  try {
+    console.log('📡 API Call: PUT /api/proxmox/lxc/:vmid/config');
+    console.log('📋 Update Config:', JSON.stringify(req.body, null, 2));
+    const result = await proxmoxAPI.updateLXCConfig(req.params.vmid, req.body);
+    console.log('✅ LXC config updated successfully');
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Erreur PUT /lxc/:vmid/config:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Resize LXC disk
+router.put('/lxc/:vmid/resize', async (req, res) => {
+  try {
+    console.log('📡 API Call: PUT /api/proxmox/lxc/:vmid/resize');
+    const { disk, size } = req.body;
+    const result = await proxmoxAPI.resizeLXCDisk(req.params.vmid, disk, size);
+    console.log('✅ LXC disk resized successfully');
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Erreur PUT /lxc/:vmid/resize:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create LXC container on specific node
+router.post('/nodes/:node/lxc', async (req, res) => {
+  try {
+    console.log('📡 API Call: POST /api/proxmox/nodes/:node/lxc');
+    console.log('📋 LXC Config:', JSON.stringify(req.body, null, 2));
+    const result = await proxmoxAPI.createLXC(req.params.node, req.body);
+    console.log('✅ LXC créé avec succès');
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Erreur POST /nodes/:node/lxc:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
