@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Bell, Activity, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { useApp } from '../contexts/AppContext';
+import { translate } from '../i18n/translations';
 
 export default function Monitoring() {
+  const { language } = useApp();
   const [alerts, setAlerts] = useState([
     { id: '1', type: 'warning', title: 'CPU Usage High', message: 'Node pve: CPU usage above 80%', time: new Date(), resolved: false },
     { id: '2', type: 'error', title: 'VM Down', message: 'VM 101 (database) is not responding', time: new Date(Date.now() - 3600000), resolved: false },
@@ -29,8 +32,8 @@ export default function Monitoring() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold text-white mb-2">Monitoring & Alerts</h2>
-        <p className="text-slate-400">Surveillez votre infrastructure en temps réel</p>
+        <h2 className="text-3xl font-bold text-white mb-2">{translate('monitoring.title', language)}</h2>
+        <p className="text-slate-400">{translate('monitoring.subtitle', language)}</p>
       </div>
 
       {/* Real-time Stats */}

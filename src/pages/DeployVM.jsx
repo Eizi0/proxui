@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { Rocket, Server, HardDrive, Cpu, MemoryStick } from 'lucide-react';
+import { useApp } from '../contexts/AppContext';
+import { translate } from '../i18n/translations';
 
 export default function DeployVM() {
+  const { language } = useApp();
   const [formData, setFormData] = useState({
     vmid: '',
     name: '',
@@ -20,7 +23,7 @@ export default function DeployVM() {
     e.preventDefault();
     console.log('Deploying VM:', formData);
     // TODO: Implémenter l'API de création de VM
-    alert('⚠️ Fonction en développement\n\nLa création de VM sera disponible prochainement via l\'API Proxmox.');
+    alert(translate('deployvm.inDevelopment', language));
   };
 
   const handleChange = (e) => {
@@ -34,8 +37,8 @@ export default function DeployVM() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold text-white mb-2">Deploy Virtual Machine</h2>
-        <p className="text-slate-400">Créez et déployez une nouvelle machine virtuelle</p>
+        <h2 className="text-3xl font-bold text-white mb-2">{translate('deployvm.title', language)}</h2>
+        <p className="text-slate-400">{translate('deployvm.subtitle', language)}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="max-w-4xl">
@@ -44,12 +47,12 @@ export default function DeployVM() {
           <div>
             <h3 className="text-lg font-bold text-white mb-4 flex items-center">
               <Server className="mr-2" size={20} />
-              Informations Générales
+              {translate('deployvm.generalInfo', language)}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  VM ID
+                  {translate('deployvm.vmid', language)}
                 </label>
                 <input
                   type="number"
@@ -63,7 +66,7 @@ export default function DeployVM() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Nom
+                  {translate('deployvm.name', language)}
                 </label>
                 <input
                   type="text"
@@ -77,7 +80,7 @@ export default function DeployVM() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Type OS
+                  {translate('deployvm.osType', language)}
                 </label>
                 <select
                   name="osType"

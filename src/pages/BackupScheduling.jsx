@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Plus, Clock, Edit2, Trash2, Play, RefreshCw, AlertCircle, Check } from 'lucide-react';
 import Modal from '../components/Modal';
+import { useApp } from '../contexts/AppContext';
+import { translate } from '../i18n/translations';
 
 export default function BackupScheduling() {
+  const { language } = useApp();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -71,7 +74,7 @@ export default function BackupScheduling() {
       }
     } catch (error) {
       console.error('Error saving job:', error);
-      alert('Erreur lors de la sauvegarde');
+      alert(translate('backupscheduling.saveError', language));
     }
   };
 
@@ -95,7 +98,7 @@ export default function BackupScheduling() {
   };
 
   const handleDelete = async (jobId) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette planification ?')) {
+    if (!confirm(translate('backupscheduling.deleteConfirm', language))) {
       return;
     }
 
@@ -105,7 +108,7 @@ export default function BackupScheduling() {
       });
 
       if (response.ok) {
-        alert('Job supprimé !');
+        alert(translate('backupscheduling.deleteSuccess', language));
         fetchJobs();
       } else {
         const error = await response.json();
@@ -113,7 +116,7 @@ export default function BackupScheduling() {
       }
     } catch (error) {
       console.error('Error deleting job:', error);
-      alert('Erreur lors de la suppression');
+      alert(translate('backupscheduling.deleteError', language));
     }
   };
 
@@ -158,14 +161,14 @@ export default function BackupScheduling() {
 
   const formatSchedule = (dow, starttime) => {
     const days = {
-      '*': 'Tous les jours',
-      '0': 'Dimanche',
-      '1': 'Lundi',
-      '2': 'Mardi',
-      '3': 'Mercredi',
-      '4': 'Jeudi',
-      '5': 'Vendredi',
-      '6': 'Samedi'
+      '*': translate('backupscheduling.allDays', language),
+      '0': translate('backupscheduling.sunday', language),
+      '1': translate('backupscheduling.monday', language),
+      '2': translate('backupscheduling.tuesday', language),
+      '3': translate('backupscheduling.wednesday', language),
+      '4': translate('backupscheduling.thursday', language),
+      '5': translate('backupscheduling.friday', language),
+      '6': translate('backupscheduling.saturday', language)
     };
     
     return `${days[dow] || dow} à ${starttime}`;
@@ -181,17 +184,17 @@ export default function BackupScheduling() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2">Planification des Backups</h2>
-          <p className="text-slate-400">Configurez vos sauvegardes automatiques</p>
+          <h2 className="text-3xl font-bold text-white mb-2">{translate('backupscheduling.title', language)}</h2>
+          <p className="text-slate-400">{translate('backupscheduling.subtitle', language)}</p>
         </div>
         <div className="flex space-x-3">
           <button onClick={fetchJobs} className="btn btn-secondary">
             <RefreshCw size={16} className="mr-2" />
-            Actualiser
+            {translate('backups.refresh', language)}
           </button>
           <button onClick={() => { setEditingJob(null); resetForm(); setShowModal(true); }} className="btn btn-primary">
             <Plus size={16} className="mr-2" />
-            Nouvelle Planification
+            {translate('backupscheduling.create', language)}
           </button>
         </div>
       </div>
@@ -355,14 +358,14 @@ export default function BackupScheduling() {
                   onChange={(e) => setFormData({...formData, dow: e.target.value})}
                   className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
                 >
-                  <option value="*">Tous les jours</option>
-                  <option value="0">Dimanche</option>
-                  <option value="1">Lundi</option>
-                  <option value="2">Mardi</option>
-                  <option value="3">Mercredi</option>
-                  <option value="4">Jeudi</option>
-                  <option value="5">Vendredi</option>
-                  <option value="6">Samedi</option>
+                  <option value="*">{translate('backupscheduling.allDays', language)}</option>
+                  <option value="0">{translate('backupscheduling.sunday', language)}</option>
+                  <option value="1">{translate('backupscheduling.monday', language)}</option>
+                  <option value="2">{translate('backupscheduling.tuesday', language)}</option>
+                  <option value="3">{translate('backupscheduling.wednesday', language)}</option>
+                  <option value="4">{translate('backupscheduling.thursday', language)}</option>
+                  <option value="5">{translate('backupscheduling.friday', language)}</option>
+                  <option value="6">{translate('backupscheduling.saturday', language)}</option>
                 </select>
               </div>
 

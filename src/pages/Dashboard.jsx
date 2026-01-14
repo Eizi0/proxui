@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Server, Box, Container, Activity, Cpu, HardDrive, MemoryStick } from 'lucide-react';
+import { useApp } from '../contexts/AppContext';
+import { translate } from '../i18n/translations';
 
 export default function Dashboard() {
+  const { language } = useApp();
   const [stats, setStats] = useState(null);
   const [recentResources, setRecentResources] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,38 +42,38 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold text-white mb-2">Dashboard</h2>
-        <p className="text-slate-400">Vue d'ensemble de votre infrastructure Proxmox</p>
+        <h2 className="text-3xl font-bold text-white mb-2">{translate('dashboard.title', language)}</h2>
+        <p className="text-slate-400">{translate('dashboard.subtitle', language)}</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
-          title="Machines Virtuelles"
+          title={translate('dashboard.vms', language)}
           value={stats?.overview?.vms?.total || 0}
-          subtitle={`${stats?.overview?.vms?.running || 0} en cours`}
+          subtitle={`${stats?.overview?.vms?.running || 0} ${translate('dashboard.running', language)}`}
           icon={Server}
           color="blue"
         />
         <StatsCard
-          title="Conteneurs LXC"
+          title={translate('dashboard.lxc', language)}
           value={stats?.overview?.lxc?.total || 0}
-          subtitle={`${stats?.overview?.lxc?.running || 0} en cours`}
+          subtitle={`${stats?.overview?.lxc?.running || 0} ${translate('dashboard.running', language)}`}
           icon={Box}
           color="green"
         />
         <StatsCard
-          title="Conteneurs Docker"
+          title={translate('dashboard.docker', language)}
           value={stats?.overview?.docker?.total || 0}
-          subtitle={`${stats?.overview?.docker?.running || 0} en cours`}
+          subtitle={`${stats?.overview?.docker?.running || 0} ${translate('dashboard.running', language)}`}
           icon={Container}
           color="purple"
           disabled={!stats?.overview?.docker?.available}
         />
         <StatsCard
-          title="Nodes"
+          title={translate('dashboard.nodes', language)}
           value={stats?.overview?.nodes?.total || 0}
-          subtitle={`${stats?.overview?.nodes?.online || 0} en ligne`}
+          subtitle={`${stats?.overview?.nodes?.online || 0} ${translate('dashboard.online', language)}`}
           icon={Activity}
           color="orange"
         />
@@ -81,18 +84,18 @@ export default function Dashboard() {
         <div className="card">
           <h3 className="text-xl font-bold text-white mb-4 flex items-center">
             <Cpu className="mr-2" size={24} />
-            CPU & Mémoire
+            {translate('dashboard.cpu', language)} & {translate('dashboard.memory', language)}
           </h3>
           <div className="space-y-4">
             <ResourceBar
-              label="CPU"
+              label={translate('dashboard.cpu', language)}
               value={stats?.resources?.cpu?.usage || 0}
               max={100}
               unit="%"
               color="blue"
             />
             <ResourceBar
-              label="Mémoire"
+              label={translate('dashboard.memory', language)}
               value={stats?.resources?.memory?.percentage || 0}
               max={100}
               unit="%"
@@ -105,7 +108,7 @@ export default function Dashboard() {
         <div className="card">
           <h3 className="text-xl font-bold text-white mb-4 flex items-center">
             <HardDrive className="mr-2" size={24} />
-            Stockage
+            {translate('dashboard.storage', language)}
           </h3>
           <div className="space-y-4">
             <ResourceBar

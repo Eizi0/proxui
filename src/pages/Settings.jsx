@@ -1,14 +1,29 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Settings as SettingsIcon, Save, Server, Shield, Bell, 
   Database, Moon, Sun, Globe, Mail, Webhook, HardDrive,
-  Check, AlertCircle, RefreshCw
+  Check, AlertCircle, RefreshCw, Plus, Trash2, Edit2, X
 } from 'lucide-react';
+import Modal from '../components/Modal';
+import { useApp } from '../contexts/AppContext';
+import { translate } from '../i18n/translations';
 
 export default function Settings() {
+  const { reloadConfig, language } = useApp();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'general');
+  const [showNodeModal, setShowNodeModal] = useState(false);
+  const [editingNode, setEditingNode] = useState(null);
+  const [nodeFormData, setNodeFormData] = useState({
+    name: '',
+    host: '',
+    user: 'root@pam',
+    password: '',
+    primary: false
+  });
   const [config, setConfig] = useState({
     // General
     proxmoxHost: 'https://localhost:8006',
@@ -17,8 +32,7 @@ export default function Settings() {
     autoRefresh: true,
     refreshInterval: 5,
     
-    // Theme & Language
-    theme: 'dark',
+    // Language
     language: 'fr',
     
     // Proxmox Backup Server
@@ -44,6 +58,9 @@ export default function Settings() {
     // Webhook
     webhookUrl: '',
     webhookSecret: '',
+    
+    // Multi-node
+    nodes: []
   });
 
   useEffect(() => {
@@ -81,7 +98,15 @@ export default function Settings() {
       });
 
       if (response.ok) {
-        alert('✅ Configuration enregistrée avec succès !');
+        const result = await response.json();
+        
+        // Recharger la config dans le contexte
+        await reloadConfig();
+        
+        // Afficher un message de succès et proposer de recharger
+        if (window.confirm(result.message + '\n\nRecharger la page pour appliquer tous les changements ?')) {
+          window.location.reload();
+        }
       } else {
         const error = await response.json();
         alert('❌ Erreur: ' + (error.message || 'Impossible de sauvegarder'));
@@ -110,12 +135,8 @@ export default function Settings() {
         })
       });
 
-      if (response.ok) {
-        alert('✅ Email de test envoyé avec succès !');
-      } else {
-        const error = await response.json();
-        alert('❌ Erreur: ' + (error.message || 'Échec de l\'envoi'));
-      }
+      const result = await response.json();
+      alert(result.message || (response.ok ? '✅ Email de test envoyé !' : '❌ Erreur'));
     } catch (error) {
       console.error('Error testing email:', error);
       alert('❌ Erreur lors du test email');
@@ -135,16 +156,72 @@ export default function Settings() {
         })
       });
 
-      if (response.ok) {
-        alert('✅ Connexion PBS réussie !');
-      } else {
-        const error = await response.json();
-        alert('❌ Erreur: ' + (error.message || 'Échec de connexion'));
-      }
+      const result = await response.json();
+      alert(result.message || (response.ok ? '✅ Connexion PBS réussie !' : '❌ Erreur'));
     } catch (error) {
       console.error('Error testing PBS:', error);
       alert('❌ Erreur lors du test PBS');
     }
+  };
+
+  // Node management functions
+  const handleAddNode = () => {
+    setEditingNode(null);
+    setNodeFormData({
+      name: '',
+      host: '',
+      user: 'root@pam',
+      password: '',
+      primary: false
+    });
+    setShowNodeModal(true);
+  };
+
+  const handleEditNode = (node, index) => {
+    setEditingNode(index);
+    setNodeFormData({ ...node });
+    setShowNodeModal(true);
+  };
+
+  const handleDeleteNode = (index) => {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce node ?')) {
+      const newNodes = config.nodes.filter((_, i) => i !== index);
+      setConfig(prev => ({ ...prev, nodes: newNodes }));
+    }
+  };
+
+  const handleSaveNode = () => {
+    if (!nodeFormData.name || !nodeFormData.host) {
+      alert('Nom et hôte sont requis');
+      return;
+    }
+
+    let newNodes = [...config.nodes];
+    
+    if (editingNode !== null) {
+      newNodes[editingNode] = nodeFormData;
+    } else {
+      newNodes.push(nodeFormData);
+    }
+
+    // Si ce node est marqué comme primary, retirer primary des autres
+    if (nodeFormData.primary) {
+      newNodes = newNodes.map((n, i) => ({
+        ...n,
+        primary: editingNode !== null ? i === editingNode : i === newNodes.length - 1
+      }));
+    }
+
+    setConfig(prev => ({ ...prev, nodes: newNodes }));
+    setShowNodeModal(false);
+  };
+
+  const handleSetPrimaryNode = (index) => {
+    const newNodes = config.nodes.map((n, i) => ({
+      ...n,
+      primary: i === index
+    }));
+    setConfig(prev => ({ ...prev, nodes: newNodes }));
   };
 
   if (loading) {
@@ -154,18 +231,19 @@ export default function Settings() {
   }
 
   const tabs = [
-    { id: 'general', name: 'Général', icon: Server },
-    { id: 'backup', name: 'Backup PBS', icon: Database },
-    { id: 'appearance', name: 'Apparence', icon: Moon },
-    { id: 'notifications', name: 'Notifications', icon: Bell },
+    { id: 'general', name: translate('settings.general', language), icon: Server },
+    { id: 'nodes', name: translate('settings.nodes', language), icon: HardDrive },
+    { id: 'backup', name: translate('settings.backup', language), icon: Database },
+    { id: 'language', name: translate('settings.language', language), icon: Globe },
+    { id: 'notifications', name: translate('settings.notifications', language), icon: Bell },
   ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-3xl font-bold text-white mb-2">Paramètres</h2>
-        <p className="text-slate-400">Configurez votre instance ProxUI</p>
+        <h2 className="text-3xl font-bold text-white mb-2">{translate('settings.title', language)}</h2>
+        <p className="text-slate-400">{translate('settings.subtitle', language)}</p>
       </div>
 
       {/* Tabs */}
@@ -286,6 +364,109 @@ export default function Settings() {
           </div>
         )}
 
+        {/* Nodes Tab */}
+        {activeTab === 'nodes' && (
+          <div className="space-y-6">
+            <div className="card">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-white flex items-center">
+                    <HardDrive className="mr-2" size={24} />
+                    Gestion Multi-Node
+                  </h3>
+                  <p className="text-slate-400 text-sm mt-1">
+                    Gérez plusieurs serveurs Proxmox depuis une seule interface
+                  </p>
+                </div>
+                <button onClick={handleAddNode} className="btn btn-primary">
+                  <Plus size={16} className="mr-2" />
+                  Ajouter un Node
+                </button>
+              </div>
+
+              <div className="bg-blue-500/10 border border-blue-500/50 rounded-lg p-4 mb-6">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle size={20} className="text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-slate-300 text-sm">
+                      Ajoutez plusieurs serveurs Proxmox pour les gérer depuis une seule interface centralisée.
+                      Vous pouvez marquer un node comme principal (primary) qui sera utilisé par défaut.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {config.nodes.length === 0 ? (
+                <div className="text-center py-12 bg-slate-700/30 rounded-lg border border-slate-700">
+                  <HardDrive size={48} className="mx-auto text-slate-600 mb-4" />
+                  <p className="text-slate-400 text-lg mb-2">Aucun node configuré</p>
+                  <p className="text-slate-500 text-sm mb-4">
+                    Ajoutez des serveurs Proxmox pour une gestion multi-node
+                  </p>
+                  <button onClick={handleAddNode} className="btn btn-primary">
+                    <Plus size={16} className="mr-2" />
+                    Ajouter le premier node
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {config.nodes.map((node, index) => (
+                    <div key={index} className="bg-slate-700/30 rounded-lg p-4 border border-slate-700 hover:border-slate-600 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h4 className="text-white font-semibold text-lg">{node.name}</h4>
+                            {node.primary && (
+                              <span className="status-badge status-running text-xs">
+                                Primary
+                              </span>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <p className="text-slate-400">Hôte</p>
+                              <p className="text-white font-mono">{node.host}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-400">Utilisateur</p>
+                              <p className="text-white font-mono">{node.user}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2 ml-4">
+                          {!node.primary && (
+                            <button
+                              onClick={() => handleSetPrimaryNode(index)}
+                              className="p-2 hover:bg-green-500/20 rounded-lg transition-colors"
+                              title="Définir comme principal"
+                            >
+                              <Check size={18} className="text-green-400" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleEditNode(node, index)}
+                            className="p-2 hover:bg-blue-500/20 rounded-lg transition-colors"
+                            title="Modifier"
+                          >
+                            <Edit2 size={18} className="text-blue-400" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteNode(index)}
+                            className="p-2 hover:bg-red-500/20 rounded-lg transition-colors"
+                            title="Supprimer"
+                          >
+                            <Trash2 size={18} className="text-red-400" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Backup PBS Tab */}
         {activeTab === 'backup' && (
           <div className="space-y-6">
@@ -398,64 +579,53 @@ export default function Settings() {
           </div>
         )}
 
-        {/* Appearance Tab */}
-        {activeTab === 'appearance' && (
+        {/* Language Tab */}
+        {activeTab === 'language' && (
           <div className="space-y-6">
             <div className="card">
               <h3 className="text-xl font-bold text-white mb-4 flex items-center">
-                <Moon className="mr-2" size={24} />
-                Apparence
+                <Globe className="mr-2" size={24} />
+                Langue de l'interface
               </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-3">
-                    Thème
-                  </label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      onClick={() => setConfig(prev => ({ ...prev, theme: 'dark' }))}
-                      className={`p-4 rounded-lg border-2 transition-all ${
-                        config.theme === 'dark'
-                          ? 'border-proxmox-500 bg-proxmox-500/10'
-                          : 'border-slate-600 bg-slate-700/30'
-                      }`}
-                    >
-                      <Moon size={32} className="mx-auto mb-2 text-slate-300" />
-                      <p className="text-white font-medium">Sombre</p>
-                      <p className="text-slate-400 text-sm">Thème par défaut</p>
-                    </button>
-
-                    <button
-                      onClick={() => setConfig(prev => ({ ...prev, theme: 'light' }))}
-                      className={`p-4 rounded-lg border-2 transition-all ${
-                        config.theme === 'light'
-                          ? 'border-proxmox-500 bg-proxmox-500/10'
-                          : 'border-slate-600 bg-slate-700/30'
-                      }`}
-                    >
-                      <Sun size={32} className="mx-auto mb-2 text-slate-300" />
-                      <p className="text-white font-medium">Clair</p>
-                      <p className="text-slate-400 text-sm">Thème lumineux</p>
-                    </button>
+              
+              <div className="bg-blue-500/10 border border-blue-500/50 rounded-lg p-4 mb-6">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle size={20} className="text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-slate-300 text-sm">
+                      Le changement de langue s'applique à l'ensemble de l'interface, y compris les menus et le contenu des pages.
+                    </p>
                   </div>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Langue
-                  </label>
-                  <select
-                    name="language"
-                    value={config.language}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-proxmox-500"
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => setConfig(prev => ({ ...prev, language: 'fr' }))}
+                    className={`p-6 rounded-lg border-2 transition-all ${
+                      config.language === 'fr'
+                        ? 'border-proxmox-500 bg-proxmox-500/10'
+                        : 'border-slate-600 bg-slate-700/30 hover:border-slate-500'
+                    }`}
                   >
-                    <option value="fr">🇫🇷 Français</option>
-                    <option value="en">🇬🇧 English</option>
-                    <option value="es">🇪🇸 Español</option>
-                    <option value="de">🇩🇪 Deutsch</option>
-                    <option value="it">🇮🇹 Italiano</option>
-                  </select>
+                    <div className="text-4xl mb-3">🇫🇷</div>
+                    <p className="text-white font-medium text-lg">Français</p>
+                    <p className="text-slate-400 text-sm">Langue française</p>
+                  </button>
+
+                  <button
+                    onClick={() => setConfig(prev => ({ ...prev, language: 'en' }))}
+                    className={`p-6 rounded-lg border-2 transition-all ${
+                      config.language === 'en'
+                        ? 'border-proxmox-500 bg-proxmox-500/10'
+                        : 'border-slate-600 bg-slate-700/30 hover:border-slate-500'
+                    }`}
+                  >
+                    <div className="text-4xl mb-3">🇬🇧</div>
+                    <p className="text-white font-medium text-lg">English</p>
+                    <p className="text-slate-400 text-sm">English language</p>
+                  </button>
                 </div>
               </div>
             </div>
@@ -718,6 +888,105 @@ export default function Settings() {
           </button>
         </div>
       </div>
+
+      {/* Node Modal */}
+      {showNodeModal && (
+        <Modal 
+          isOpen={showNodeModal} 
+          onClose={() => setShowNodeModal(false)} 
+          title={editingNode !== null ? 'Modifier le Node' : 'Ajouter un Node'}
+          size="lg"
+        >
+          <div className="space-y-4">
+            <div className="bg-blue-500/10 border border-blue-500/50 rounded-lg p-3">
+              <p className="text-slate-300 text-sm">
+                Ajoutez un serveur Proxmox VE pour étendre votre infrastructure.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-slate-300 font-medium mb-2">Nom du Node</label>
+              <input
+                type="text"
+                value={nodeFormData.name}
+                onChange={(e) => setNodeFormData({...nodeFormData, name: e.target.value})}
+                placeholder="pve-cluster-01"
+                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                required
+              />
+              <p className="text-slate-500 text-xs mt-1">Nom descriptif pour identifier ce node</p>
+            </div>
+
+            <div>
+              <label className="block text-slate-300 font-medium mb-2">Hôte (URL complète)</label>
+              <input
+                type="text"
+                value={nodeFormData.host}
+                onChange={(e) => setNodeFormData({...nodeFormData, host: e.target.value})}
+                placeholder="https://192.168.1.100:8006"
+                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                required
+              />
+              <p className="text-slate-500 text-xs mt-1">URL complète avec protocole et port</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-slate-300 font-medium mb-2">Utilisateur</label>
+                <input
+                  type="text"
+                  value={nodeFormData.user}
+                  onChange={(e) => setNodeFormData({...nodeFormData, user: e.target.value})}
+                  placeholder="root@pam"
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-medium mb-2">Mot de passe</label>
+                <input
+                  type="password"
+                  value={nodeFormData.password}
+                  onChange={(e) => setNodeFormData({...nodeFormData, password: e.target.value})}
+                  placeholder="••••••••"
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center p-4 bg-slate-700/30 rounded-lg">
+              <input
+                type="checkbox"
+                checked={nodeFormData.primary}
+                onChange={(e) => setNodeFormData({...nodeFormData, primary: e.target.checked})}
+                className="w-4 h-4 text-proxmox-600 bg-slate-700 border-slate-600 rounded"
+              />
+              <label className="ml-3 text-slate-300">
+                Définir comme node principal
+                <span className="block text-slate-500 text-xs">Ce node sera utilisé par défaut</span>
+              </label>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-700">
+              <button 
+                onClick={() => setShowNodeModal(false)} 
+                className="btn btn-secondary"
+              >
+                Annuler
+              </button>
+              <button 
+                onClick={handleSaveNode} 
+                className="btn btn-primary"
+              >
+                <Check size={16} className="mr-2" />
+                {editingNode !== null ? 'Mettre à jour' : 'Ajouter'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

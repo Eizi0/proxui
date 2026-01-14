@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Play, Square, RotateCw, Trash2, Box, Container } from 'lucide-react';
+import { useApp } from '../contexts/AppContext';
+import { translate } from '../i18n/translations';
 
 export default function Containers() {
+  const { language } = useApp();
   const [activeTab, setActiveTab] = useState('lxc');
   const [lxcContainers, setLxcContainers] = useState([]);
   const [dockerContainers, setDockerContainers] = useState([]);
@@ -72,8 +75,8 @@ export default function Containers() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold text-white mb-2">Containers</h2>
-        <p className="text-slate-400">Gérez vos conteneurs LXC et Docker</p>
+        <h2 className="text-3xl font-bold text-white mb-2">{translate('containers.title', language)}</h2>
+        <p className="text-slate-400">{translate('containers.subtitle', language)}</p>
       </div>
 
       {/* Tabs */}
@@ -87,7 +90,7 @@ export default function Containers() {
           }`}
         >
           <Box className="inline mr-2" size={18} />
-          LXC Containers ({lxcContainers.length})
+          {translate('containers.lxc', language)} ({lxcContainers.length})
           {activeTab === 'lxc' && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-proxmox-600"></div>
           )}
@@ -101,7 +104,7 @@ export default function Containers() {
           }`}
         >
           <Container className="inline mr-2" size={18} />
-          Docker Containers ({dockerContainers.length})
+          {translate('containers.docker', language)} ({dockerContainers.length})
           {activeTab === 'docker' && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-proxmox-600"></div>
           )}
@@ -112,12 +115,12 @@ export default function Containers() {
       {activeTab === 'lxc' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {lxcContainers.map((container) => (
-            <LXCCard key={container.vmid} container={container} onAction={handleLXCAction} />
+            <LXCCard key={container.vmid} container={container} onAction={handleLXCAction} language={language} />
           ))}
           {lxcContainers.length === 0 && (
             <div className="col-span-full card text-center py-12">
               <Box className="mx-auto text-slate-600 mb-4" size={48} />
-              <p className="text-slate-400">Aucun conteneur LXC trouvé</p>
+              <p className="text-slate-400">{translate('containers.none', language)}</p>
             </div>
           )}
         </div>
@@ -126,20 +129,18 @@ export default function Containers() {
           {!dockerAvailable ? (
             <div className="card text-center py-12">
               <Container className="mx-auto text-slate-600 mb-4" size={48} />
-              <h3 className="text-xl font-bold text-white mb-2">Docker non disponible</h3>
-              <p className="text-slate-400">
-                Docker n'est pas accessible. Vérifiez que le socket Docker est monté.
-              </p>
+              <h3 className="text-xl font-bold text-white mb-2">Docker</h3>
+              <p className="text-slate-400">{translate('containers.dockerUnavailable', language)}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {dockerContainers.map((container) => (
-                <DockerCard key={container.Id} container={container} onAction={handleDockerAction} />
+                <DockerCard key={container.Id} container={container} onAction={handleDockerAction} language={language} />
               ))}
               {dockerContainers.length === 0 && (
                 <div className="col-span-full card text-center py-12">
                   <Container className="mx-auto text-slate-600 mb-4" size={48} />
-                  <p className="text-slate-400">Aucun conteneur Docker trouvé</p>
+                  <p className="text-slate-400">{translate('containers.none', language)}</p>
                 </div>
               )}
             </div>

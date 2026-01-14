@@ -20,6 +20,8 @@ import {
   Download
 } from 'lucide-react';
 import { useState } from 'react';
+import { useApp } from '../contexts/AppContext';
+import { translate } from '../i18n/translations';
 
 const menuSections = [
   {
@@ -65,6 +67,7 @@ const menuSections = [
 ];
 
 export default function Sidebar({ isOpen, setIsOpen }) {
+  const { language } = useApp();
   const [expandedSections, setExpandedSections] = useState({
     Dashboard: true,
     Infrastructure: true,
@@ -114,7 +117,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 onClick={() => toggleSection(section.title)}
                 className="flex items-center justify-between w-full px-2 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-300 transition-colors"
               >
-                <span>{section.title}</span>
+                <span>{translate(section.title, language)}</span>
                 <ChevronDown
                   size={14}
                   className={`transition-transform ${
@@ -138,10 +141,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                           : 'text-slate-400 hover:text-white hover:bg-slate-700'
                       }`
                     }
-                    title={!isOpen ? item.label : ''}
+                    title={!isOpen ? translate(item.label, language) : ''}
                   >
                     <item.icon size={18} />
-                    {isOpen && <span className="font-medium">{item.label}</span>}
+                    {isOpen && <span className="font-medium">{translate(item.label, language)}</span>}
                   </NavLink>
                 ))}
               </div>

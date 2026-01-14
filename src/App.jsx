@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { AppProvider } from './contexts/AppContext';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Hosts from './pages/Hosts';
@@ -20,6 +21,14 @@ import Monitoring from './pages/Monitoring';
 import InitialSetup from './pages/InitialSetup';
 
 function App() {
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
+  );
+}
+
+function AppContent() {
   const [configured, setConfigured] = useState(null);
   const [loading, setLoading] = useState(true);
 

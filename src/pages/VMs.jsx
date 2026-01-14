@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Play, Square, RotateCw, Server } from 'lucide-react';
+import { useApp } from '../contexts/AppContext';
+import { translate } from '../i18n/translations';
 
 export default function VMs() {
+  const { language } = useApp();
   const [vms, setVMs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -43,32 +46,32 @@ export default function VMs() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2">Machines Virtuelles</h2>
-          <p className="text-slate-400">Gérez vos VMs Proxmox</p>
+          <h2 className="text-3xl font-bold text-white mb-2">{translate('vms.title', language)}</h2>
+          <p className="text-slate-400">{translate('vms.subtitle', language)}</p>
         </div>
         <button className="btn btn-primary">
           <Server className="inline mr-2" size={16} />
-          Créer une VM
+          {translate('vms.create', language)}
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {vms.map((vm) => (
-          <VMCard key={vm.vmid} vm={vm} onAction={handleAction} />
+          <VMCard key={vm.vmid} vm={vm} onAction={handleAction} language={language} />
         ))}
       </div>
 
       {vms.length === 0 && (
         <div className="card text-center py-12">
           <Server className="mx-auto text-slate-600 mb-4" size={48} />
-          <p className="text-slate-400">Aucune machine virtuelle trouvée</p>
+          <p className="text-slate-400">{translate('vms.none', language)}</p>
         </div>
       )}
     </div>
   );
 }
 
-function VMCard({ vm, onAction }) {
+function VMCard({ vm, onAction, language }) {
   const isRunning = vm.status === 'running';
 
   return (
@@ -76,10 +79,10 @@ function VMCard({ vm, onAction }) {
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-lg font-bold text-white">{vm.name}</h3>
-          <p className="text-sm text-slate-400">ID: {vm.vmid}</p>
+          <p className="text-sm text-slate-400">{translate('common.id', language)}: {vm.vmid}</p>
         </div>
         <span className={`status-badge ${isRunning ? 'status-running' : 'status-stopped'}`}>
-          {vm.status}
+          {isRunning ? translate('vms.status.running', language) : translate('vms.status.stopped', language)}
         </span>
       </div>
 

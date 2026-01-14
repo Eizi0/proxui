@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Upload, Search, Filter, Package, Container, HardDrive, ExternalLink, CheckCircle, Clock, XCircle, RefreshCw } from 'lucide-react';
 import Modal from '../components/Modal';
+import { useApp } from '../contexts/AppContext';
+import { translate } from '../i18n/translations';
 
 export default function Downloads() {
+  const { language } = useApp();
   const [activeTab, setActiveTab] = useState('iso'); // iso, lxc, docker
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
@@ -66,8 +69,8 @@ export default function Downloads() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold text-white mb-2">Téléchargements</h2>
-        <p className="text-slate-400">Gérez vos ISOs, Templates LXC et Images Docker</p>
+        <h2 className="text-3xl font-bold text-white mb-2">{translate('downloads.title', language)}</h2>
+        <p className="text-slate-400">{translate('downloads.subtitle', language)}</p>
       </div>
 
       {/* Tabs */}
@@ -81,7 +84,7 @@ export default function Downloads() {
           }`}
         >
           <HardDrive size={20} className="inline mr-2" />
-          ISO Images
+          {translate('downloads.isos', language)}
         </button>
         <button
           onClick={() => setActiveTab('lxc')}
@@ -92,7 +95,7 @@ export default function Downloads() {
           }`}
         >
           <Package size={20} className="inline mr-2" />
-          Templates LXC
+          {translate('downloads.templates', language)}
         </button>
         <button
           onClick={() => setActiveTab('docker')}
@@ -119,7 +122,7 @@ export default function Downloads() {
         <div className="card">
           <h3 className="text-xl font-bold text-white mb-4 flex items-center">
             <Download size={20} className="mr-2" />
-            Téléchargements en cours
+            {translate('downloads.inProgress', language)}
           </h3>
           <div className="space-y-3">
             {downloads.map((download, index) => (

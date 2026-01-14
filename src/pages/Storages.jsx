@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Database, HardDrive, Plus, Info, Settings, Trash2, CheckCircle, XCircle, FolderOpen, File, Folder, Download, FileText, FileImage, FileArchive, FileCode } from 'lucide-react';
 import Modal from '../components/Modal';
+import { useApp } from '../contexts/AppContext';
+import { translate } from '../i18n/translations';
 
 export default function Storages() {
+  const { language } = useApp();
   const [storages, setStorages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStorage, setSelectedStorage] = useState(null);
@@ -74,12 +77,12 @@ export default function Storages() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2">Storages</h2>
-          <p className="text-slate-400">Gérez vos espaces de stockage Proxmox</p>
+          <h2 className="text-3xl font-bold text-white mb-2">{translate('storages.title', language)}</h2>
+          <p className="text-slate-400">{translate('storages.subtitle', language)}</p>
         </div>
         <button className="btn btn-primary" onClick={handleAddStorage}>
           <Plus className="inline mr-2" size={16} />
-          Ajouter un Storage
+          {translate('storages.title', language)}
         </button>
       </div>
 
@@ -91,6 +94,7 @@ export default function Storages() {
             onShowDetails={handleShowDetails}
             onShowManage={handleShowManage}
             onShowExplorer={handleShowExplorer}
+            language={language}
           />
         ))}
       </div>

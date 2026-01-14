@@ -5,8 +5,11 @@ import {
   Server, Database, History
 } from 'lucide-react';
 import Modal from '../components/Modal';
+import { useApp } from '../contexts/AppContext';
+import { translate } from '../i18n/translations';
 
 export default function Snapshots() {
+  const { language } = useApp();
   const [allSnapshots, setAllSnapshots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,7 +58,7 @@ export default function Snapshots() {
       });
 
       if (response.ok) {
-        alert('Snapshot créé avec succès !');
+        alert(translate('snapshots.createSuccess', language));
         setShowCreateModal(false);
         setCreateFormData({
           type: 'qemu',
@@ -67,16 +70,16 @@ export default function Snapshots() {
         setTimeout(fetchAllSnapshots, 2000);
       } else {
         const error = await response.json();
-        alert('Erreur: ' + (error.message || 'Impossible de créer le snapshot'));
+        alert('Erreur: ' + (error.message || translate('snapshots.createError', language)));
       }
     } catch (error) {
       console.error('Error creating snapshot:', error);
-      alert('Erreur lors de la création du snapshot');
+      alert(translate('snapshots.createErrorGeneral', language));
     }
   };
 
   const handleRollback = async (type, vmid, snapname) => {
-    if (!confirm(`Êtes-vous sûr de vouloir restaurer ce snapshot ?\n\nVM/CT: ${vmid}\nSnapshot: ${snapname}\n\n⚠️ Attention: Cette opération va écraser l'état actuel !`)) {
+    if (!confirm(`${translate('snapshots.restoreConfirm', language)}\n\nVM/CT: ${vmid}\nSnapshot: ${snapname}\n\n${translate('snapshots.restoreWarning', language)}`)) {
       return;
     }
 
@@ -86,7 +89,7 @@ export default function Snapshots() {
       });
 
       if (response.ok) {
-        alert('Rollback démarré avec succès !');
+        alert(translate('snapshots.restoreSuccess', language));
         fetchAllSnapshots();
       } else {
         const error = await response.json();
@@ -94,12 +97,12 @@ export default function Snapshots() {
       }
     } catch (error) {
       console.error('Error rolling back:', error);
-      alert('Erreur lors de la restauration');
+      alert(translate('snapshots.restoreError', language));
     }
   };
 
   const handleDelete = async (type, vmid, snapname) => {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer ce snapshot ?\n\nVM/CT: ${vmid}\nSnapshot: ${snapname}`)) {
+    if (!confirm(`${translate('snapshots.deleteConfirm', language)}\n\nVM/CT: ${vmid}\nSnapshot: ${snapname}`)) {
       return;
     }
 
@@ -109,7 +112,7 @@ export default function Snapshots() {
       });
 
       if (response.ok) {
-        alert('Snapshot supprimé avec succès');
+        alert(translate('snapshots.deleteSuccess', language));
         fetchAllSnapshots();
       } else {
         const error = await response.json();
@@ -117,7 +120,7 @@ export default function Snapshots() {
       }
     } catch (error) {
       console.error('Error deleting snapshot:', error);
-      alert('Erreur lors de la suppression');
+      alert(translate('snapshots.deleteError', language));
     }
   };
 

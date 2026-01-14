@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Network as NetworkIcon, Plus, Wifi, Settings, Trash2, Edit, Globe, Shield, Server, RefreshCw } from 'lucide-react';
 import Modal from '../components/Modal';
+import { useApp } from '../contexts/AppContext';
+import { translate } from '../i18n/translations';
 
 export default function Network() {
+  const { language } = useApp();
   const [networks, setNetworks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddBridge, setShowAddBridge] = useState(false);
@@ -72,17 +75,17 @@ export default function Network() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2">Network</h2>
-          <p className="text-slate-400">Configuration réseau de votre infrastructure Proxmox</p>
+          <h2 className="text-3xl font-bold text-white mb-2">{translate('network.title', language)}</h2>
+          <p className="text-slate-400">{translate('network.subtitle', language)}</p>
         </div>
         <div className="flex space-x-3">
           <button onClick={fetchNetworks} className="btn btn-secondary">
             <RefreshCw size={16} className="mr-2" />
-            Actualiser
+            {translate('common.filter', language)}
           </button>
           <button onClick={() => setShowAddBridge(true)} className="btn btn-primary">
             <Plus size={16} className="mr-2" />
-            Ajouter Bridge
+            Bridge
           </button>
           <button onClick={() => setShowAddVLAN(true)} className="btn btn-primary">
             <Plus size={16} className="mr-2" />

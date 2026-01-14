@@ -6,8 +6,11 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Modal from '../components/Modal';
+import { useApp } from '../contexts/AppContext';
+import { translate } from '../i18n/translations';
 
 export default function Backups() {
+  const { language } = useApp();
   const navigate = useNavigate();
   const [backups, setBackups] = useState([]);
   const [pbsStatus, setPbsStatus] = useState(null);
@@ -71,21 +74,21 @@ export default function Backups() {
       });
 
       if (response.ok) {
-        alert('Backup démarré avec succès !');
+        alert(translate('backups.backupSuccess', language));
         setShowBackupModal(false);
         setTimeout(fetchBackups, 2000);
       } else {
         const error = await response.json();
-        alert('Erreur: ' + (error.message || 'Impossible de créer le backup'));
+        alert(translate('backups.backupError', language) + ': ' + (error.message || ''));
       }
     } catch (error) {
       console.error('Error creating backup:', error);
-      alert('Erreur lors de la création du backup');
+      alert(translate('backups.backupError', language));
     }
   };
 
   const handleDeleteBackup = async (backup) => {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer ce backup ?\n${backup.volid}`)) {
+    if (!confirm(`${translate('backups.deleteConfirm', language)}\n${backup.volid}`)) {
       return;
     }
 
@@ -96,15 +99,15 @@ export default function Backups() {
       );
 
       if (response.ok) {
-        alert('Backup supprimé avec succès');
+        alert(translate('backups.deleteSuccess', language));
         fetchBackups();
       } else {
         const error = await response.json();
-        alert('Erreur: ' + (error.message || 'Impossible de supprimer le backup'));
+        alert(translate('backups.backupError', language) + ': ' + (error.message || ''));
       }
     } catch (error) {
       console.error('Error deleting backup:', error);
-      alert('Erreur lors de la suppression');
+      alert(translate('backups.deleteError', language));
     }
   };
 
@@ -117,7 +120,7 @@ export default function Backups() {
     e.preventDefault();
     
     try {
-      const vmid = prompt('Entrez le VMID de destination (laisser vide pour restaurer au même ID):');
+      const vmid = prompt(translate('backups.enterVmid', language));
       
       const response = await fetch('/api/backups/restore', {
         method: 'POST',
@@ -132,15 +135,15 @@ export default function Backups() {
       });
 
       if (response.ok) {
-        alert('Restauration démarrée avec succès !');
+        alert(translate('backups.restoreSuccess', language));
         setShowRestoreModal(false);
       } else {
         const error = await response.json();
-        alert('Erreur: ' + (error.message || 'Impossible de restaurer'));
+        alert(translate('backups.backupError', language) + ': ' + (error.message || ''));
       }
     } catch (error) {
       console.error('Error restoring backup:', error);
-      alert('Erreur lors de la restauration');
+      alert(translate('backups.restoreError', language));
     }
   };
 
@@ -194,8 +197,8 @@ export default function Backups() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold text-white mb-2">Backups</h2>
-            <p className="text-slate-400">Système de sauvegarde professionnel</p>
+            <h2 className="text-3xl font-bold text-white mb-2">{translate('backups.title', language)}</h2>
+            <p className="text-slate-400">{translate('backups.subtitle', language)}</p>
           </div>
         </div>
 
@@ -203,37 +206,30 @@ export default function Backups() {
           <div className="flex items-start space-x-4">
             <AlertCircle size={48} className="text-red-500 flex-shrink-0" />
             <div className="flex-1">
-              <h3 className="text-xl font-bold text-white mb-2">⚠️ Configuration Backup Requise</h3>
+              <h3 className="text-xl font-bold text-white mb-2">{translate('backups.noStorage', language)}</h3>
               <p className="text-slate-300 mb-4">
-                <strong>Aucun stockage de backup n'est configuré !</strong> Vous devez configurer au moins un stockage 
-                avec le type de contenu "backup" activé pour pouvoir créer des sauvegardes.
+                <strong>{translate('backups.noStorageDesc', language)}</strong>
               </p>
               
               <div className="bg-slate-800/50 rounded-lg p-4 mb-4 border border-slate-700">
-                <h4 className="text-white font-semibold mb-2">Options de configuration :</h4>
+                <h4 className="text-white font-semibold mb-2">{translate('backups.configOptions', language)}</h4>
                 <ul className="space-y-2 text-slate-300 text-sm">
                   <li className="flex items-start">
                     <span className="text-proxmox-400 mr-2">•</span>
                     <div>
-                      <strong className="text-white">Stockage Local :</strong> Utilise l'espace disque local du serveur Proxmox
-                      <br />
-                      <span className="text-slate-500 text-xs">Rapide mais limité en capacité</span>
+                      <strong className="text-white">{translate('backups.localStorage', language)} :</strong> {translate('backups.localStorageDesc', language)}
                     </div>
                   </li>
                   <li className="flex items-start">
                     <span className="text-proxmox-400 mr-2">•</span>
                     <div>
-                      <strong className="text-white">NFS/CIFS :</strong> Montez un partage réseau pour les backups
-                      <br />
-                      <span className="text-slate-500 text-xs">Bonne capacité, performance réseau-dépendante</span>
+                      <strong className="text-white">{translate('backups.nfsCifs', language)} :</strong> {translate('backups.nfsCifsDesc', language)}
                     </div>
                   </li>
                   <li className="flex items-start">
                     <span className="text-proxmox-400 mr-2">•</span>
                     <div>
-                      <strong className="text-white">Proxmox Backup Server (PBS) :</strong> Solution professionnelle avec déduplication
-                      <br />
-                      <span className="text-slate-500 text-xs">Déduplication, compression, vérification d'intégrité</span>
+                      <strong className="text-white">{translate('backups.pbs', language)} :</strong> {translate('backups.pbsDesc', language)}
                     </div>
                   </li>
                 </ul>
@@ -244,7 +240,7 @@ export default function Backups() {
                 className="btn btn-primary"
               >
                 <Settings size={16} className="mr-2" />
-                Configurer dans Settings
+                {translate('backups.configureSettings', language)}
               </button>
             </div>
           </div>
@@ -258,26 +254,26 @@ export default function Backups() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2">Backups</h2>
+          <h2 className="text-3xl font-bold text-white mb-2">{translate('backups.title', language)}</h2>
           <p className="text-slate-400">
-            Gestion professionnelle des sauvegardes
+            {translate('backups.subtitle', language)}
             {pbsStatus?.configured && (
-              <span className="ml-2 text-green-400">• PBS Configuré</span>
+              <span className="ml-2 text-green-400">• {translate('backups.pbsConfigured', language)}</span>
             )}
           </p>
         </div>
         <div className="flex space-x-3">
           <button onClick={fetchBackups} className="btn btn-secondary">
             <RefreshCw size={16} className="mr-2" />
-            Actualiser
+            {translate('backups.refresh', language)}
           </button>
           <button onClick={() => navigate('/backup-scheduling')} className="btn btn-secondary">
             <Calendar size={16} className="mr-2" />
-            Planifications
+            {translate('backups.scheduling', language)}
           </button>
           <button onClick={() => setShowBackupModal(true)} className="btn btn-primary">
             <Plus size={16} className="mr-2" />
-            Nouveau Backup
+            {translate('backups.newBackup', language)}
           </button>
         </div>
       </div>
@@ -288,23 +284,22 @@ export default function Backups() {
           <div className="flex items-start space-x-3">
             <AlertCircle size={24} className="text-yellow-500 flex-shrink-0 mt-1" />
             <div className="flex-1">
-              <h4 className="text-white font-semibold mb-1">💡 Recommandation : Proxmox Backup Server</h4>
+              <h4 className="text-white font-semibold mb-1">{translate('backups.pbsRecommendationTitle', language)}</h4>
               <p className="text-slate-300 text-sm mb-3">
-                Vous utilisez actuellement un stockage local <strong>({pbsStatus.backupStorages.map(s => s.storage).join(', ')})</strong> pour vos backups.
-                Pour une solution professionnelle de datacenter, considérez <strong>Proxmox Backup Server (PBS)</strong> :
+                {translate('backups.currentlyUsing', language)} <strong>({pbsStatus.backupStorages.map(s => s.storage).join(', ')})</strong> {translate('backups.forDatacenter', language)} <strong>Proxmox Backup Server (PBS)</strong> :
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                 <div className="bg-slate-800/30 rounded p-2 border border-slate-700/50">
                   <div className="text-green-400 text-xs font-semibold mb-1">✓ Déduplication</div>
-                  <div className="text-slate-400 text-xs">Économie d'espace massive</div>
+                  <div className="text-slate-400 text-xs">{translate('backups.deduplicationDesc', language)}</div>
                 </div>
                 <div className="bg-slate-800/30 rounded p-2 border border-slate-700/50">
                   <div className="text-green-400 text-xs font-semibold mb-1">✓ Vérification</div>
-                  <div className="text-slate-400 text-xs">Intégrité garantie</div>
+                  <div className="text-slate-400 text-xs">{translate('backups.verificationDesc', language)}</div>
                 </div>
                 <div className="bg-slate-800/30 rounded p-2 border border-slate-700/50">
                   <div className="text-green-400 text-xs font-semibold mb-1">✓ Chiffrement</div>
-                  <div className="text-slate-400 text-xs">Sécurité renforcée</div>
+                  <div className="text-slate-400 text-xs">{translate('backups.encryptionDesc', language)}</div>
                 </div>
               </div>
               <button 
@@ -324,7 +319,7 @@ export default function Backups() {
         <div className="card bg-gradient-to-br from-blue-500/20 to-blue-600/20 border-blue-500/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-slate-400 text-sm mb-1">Total Backups</p>
+              <p className="text-slate-400 text-sm mb-1">{translate('backups.totalBackups', language)}</p>
               <p className="text-3xl font-bold text-white">{backups.length}</p>
             </div>
             <Archive size={40} className="text-white opacity-20" />
@@ -334,7 +329,7 @@ export default function Backups() {
         <div className="card bg-gradient-to-br from-green-500/20 to-green-600/20 border-green-500/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-slate-400 text-sm mb-1">Espace Total</p>
+              <p className="text-slate-400 text-sm mb-1">{translate('backups.totalSpace', language)}</p>
               <p className="text-2xl font-bold text-white">{formatBytes(totalSize)}</p>
             </div>
             <HardDrive size={40} className="text-white opacity-20" />
@@ -344,7 +339,7 @@ export default function Backups() {
         <div className="card bg-gradient-to-br from-purple-500/20 to-purple-600/20 border-purple-500/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-slate-400 text-sm mb-1">VM Backups</p>
+              <p className="text-slate-400 text-sm mb-1">{translate('backups.vmBackups', language)}</p>
               <p className="text-3xl font-bold text-white">{vmBackups}</p>
             </div>
             <FileArchive size={40} className="text-white opacity-20" />
@@ -354,7 +349,7 @@ export default function Backups() {
         <div className="card bg-gradient-to-br from-orange-500/20 to-orange-600/20 border-orange-500/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-slate-400 text-sm mb-1">LXC Backups</p>
+              <p className="text-slate-400 text-sm mb-1">{translate('backups.lxcBackups', language)}</p>
               <p className="text-3xl font-bold text-white">{lxcBackups}</p>
             </div>
             <Database size={40} className="text-white opacity-20" />
@@ -423,8 +418,8 @@ export default function Backups() {
                 <tr>
                   <td colSpan="7" className="text-center py-8 text-slate-400">
                     {searchTerm || filterType !== 'all' || filterStorage !== 'all' 
-                      ? 'Aucun backup ne correspond aux filtres'
-                      : 'Aucun backup disponible'}
+                      ? translate('backups.noMatchingBackups', language)
+                      : translate('backups.noBackups', language)}
                   </td>
                 </tr>
               ) : (

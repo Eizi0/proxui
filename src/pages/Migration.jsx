@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { GitBranch, ArrowRight } from 'lucide-react';
+import { useApp } from '../contexts/AppContext';
+import { translate } from '../i18n/translations';
 
 export default function Migration() {
+  const { language } = useApp();
   const [sourceType, setSourceType] = useState('vm');
   const [selectedSource, setSelectedSource] = useState('');
   const [targetNode, setTargetNode] = useState('');
@@ -9,8 +12,8 @@ export default function Migration() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold text-white mb-2">Migration</h2>
-        <p className="text-slate-400">Migrez vos VMs et conteneurs entre nodes</p>
+        <h2 className="text-3xl font-bold text-white mb-2">{translate('migration.title', language)}</h2>
+        <p className="text-slate-400">{translate('migration.subtitle', language)}</p>
       </div>
 
       <div className="card max-w-4xl">

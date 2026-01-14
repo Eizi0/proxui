@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { Box, Container, Rocket } from 'lucide-react';
+import { useApp } from '../contexts/AppContext';
+import { translate } from '../i18n/translations';
 
 export default function DeployContainer() {
+  const { language } = useApp();
   const [containerType, setContainerType] = useState('lxc');
   const [formData, setFormData] = useState({
     vmid: '',
@@ -57,8 +60,8 @@ export default function DeployContainer() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold text-white mb-2">Deploy Container</h2>
-        <p className="text-slate-400">Créez un nouveau conteneur LXC ou Docker</p>
+        <h2 className="text-3xl font-bold text-white mb-2">{translate('deploycontainer.title', language)}</h2>
+        <p className="text-slate-400">{translate('deploycontainer.subtitle', language)}</p>
       </div>
 
       {/* Type Selection */}
@@ -72,7 +75,7 @@ export default function DeployContainer() {
           }`}
         >
           <Box size={20} />
-          <span>LXC Container</span>
+          <span>{translate('deploycontainer.lxc', language)}</span>
         </button>
         <button
           onClick={() => setContainerType('docker')}
