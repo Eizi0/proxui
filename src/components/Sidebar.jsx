@@ -89,15 +89,21 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         isOpen ? 'w-64' : 'w-20'
       } bg-slate-800 border-r border-slate-700 transition-all duration-300 flex flex-col`}
     >
-      <div className="p-6 flex items-center justify-between">
-        {isOpen && (
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-proxmox-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">P</span>
-            </div>
-            <span className="text-white font-bold text-lg">ProxUI</span>
+      {/* Logo Section */}
+      <div className="p-4 border-b border-slate-700">
+        {isOpen ? (
+          <div className="flex items-center justify-center">
+            <img src="/logo.png" alt="Proxmox UI" className="h-12 w-auto" />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center">
+            <img src="/logo-icon.png" alt="Proxmox" className="h-10 w-auto" />
           </div>
         )}
+      </div>
+
+      {/* Toggle Button */}
+      <div className="px-4 py-2 flex justify-end">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="text-slate-400 hover:text-white transition-colors"

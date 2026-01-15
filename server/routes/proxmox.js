@@ -94,6 +94,35 @@ router.get('/vms', async (req, res) => {
   }
 });
 
+// Get cluster resources with optional node filter
+router.get('/resources', async (req, res) => {
+  try {
+    const { node } = req.query;
+    console.log(`📡 API Call: GET /api/proxmox/resources${node ? `?node=${node}` : ''}`);
+    const resources = await proxmoxAPI.getResources();
+    
+    // Filter by node if specified
+    const filtered = node ? resources.filter(r => r.node === node) : resources;
+    console.log(`✅ Resources récupérées: ${filtered.length}${node ? ` pour node ${node}` : ''}`);
+    res.json(filtered);
+  } catch (error) {
+    console.error('❌ Erreur GET /resources:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get VM network interfaces (IP addresses)
+router.get('/vms/:vmid/interfaces', async (req, res) => {
+  try {
+    console.log(`📡 API Call: GET /api/proxmox/vms/${req.params.vmid}/interfaces`);
+    const interfaces = await proxmoxAPI.getVMInterfaces(req.params.vmid);
+    res.json(interfaces || []);
+  } catch (error) {
+    console.error('❌ Error getting VM interfaces:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get VM status
 router.get('/vms/:vmid', async (req, res) => {
   try {
@@ -244,7 +273,19 @@ router.post('/lxc/:vmid/reboot', async (req, res) => {
   }
 });
 
-// Get LXC config
+// Get LXC network interfaces (IP addresses)
+router.get('/lxc/:vmid/interfaces', async (req, res) => {
+  try {
+    console.log(`📡 API Call: GET /api/proxmox/lxc/${req.params.vmid}/interfaces`);
+    const interfaces = await proxmoxAPI.getLXCInterfaces(req.params.vmid);
+    res.json(interfaces || []);
+  } catch (error) {
+    console.error('❌ Error getting LXC interfaces:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get LXC configuration
 router.get('/lxc/:vmid/config', async (req, res) => {
   try {
     console.log('📡 API Call: GET /api/proxmox/lxc/:vmid/config');

@@ -117,18 +117,18 @@ export default function InitialSetup() {
         {/* Progress Steps */}
         <div className="flex justify-center mb-8">
           <div className="flex items-center space-x-4">
-            <div className={`flex items-center ${step >= 1 ? 'text-blue-400' : 'text-gray-500'}`}>
+            <div className={`flex items-center ${step >= 1 ? 'text-proxmox-400' : 'text-gray-500'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step >= 1 ? 'bg-blue-500 text-white' : 'bg-gray-700'
+                step >= 1 ? 'bg-proxmox-500 text-white' : 'bg-gray-700'
               }`}>
                 1
               </div>
               <span className="ml-2">Proxmox VE</span>
             </div>
             <div className="w-16 h-0.5 bg-gray-700"></div>
-            <div className={`flex items-center ${step >= 2 ? 'text-blue-400' : 'text-gray-500'}`}>
+            <div className={`flex items-center ${step >= 2 ? 'text-proxmox-400' : 'text-gray-500'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                step >= 2 ? 'bg-blue-500 text-white' : 'bg-gray-700'
+                step >= 2 ? 'bg-proxmox-500 text-white' : 'bg-gray-700'
               }`}>
                 2
               </div>
@@ -142,7 +142,7 @@ export default function InitialSetup() {
           {step === 1 && (
             <div>
               <div className="flex items-center mb-6">
-                <Server className="w-6 h-6 text-blue-400 mr-3" />
+                <Server className="w-6 h-6 text-proxmox-400 mr-3" />
                 <h2 className="text-2xl font-bold text-white">
                   Configuration Proxmox VE
                 </h2>
@@ -158,7 +158,7 @@ export default function InitialSetup() {
                     value={config.proxmox.host}
                     onChange={(e) => handleProxmoxChange('host', e.target.value)}
                     placeholder="https://192.168.1.100:8006"
-                    className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-proxmox-500 outline-none"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Exemple: https://172.16.22.116:8006 ou https://localhost:8006 (avec tunnel SSH)
@@ -174,7 +174,7 @@ export default function InitialSetup() {
                     value={config.proxmox.user}
                     onChange={(e) => handleProxmoxChange('user', e.target.value)}
                     placeholder="root@pam"
-                    className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-proxmox-500 outline-none"
                   />
                 </div>
 
@@ -187,7 +187,7 @@ export default function InitialSetup() {
                     value={config.proxmox.password}
                     onChange={(e) => handleProxmoxChange('password', e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-proxmox-500 outline-none"
                   />
                 </div>
 
@@ -200,7 +200,7 @@ export default function InitialSetup() {
                     value={config.proxmox.node}
                     onChange={(e) => handleProxmoxChange('node', e.target.value)}
                     placeholder="pve"
-                    className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-proxmox-500 outline-none"
                   />
                 </div>
 
@@ -210,7 +210,7 @@ export default function InitialSetup() {
                     id="verifySSL"
                     checked={!config.proxmox.verifySSL}
                     onChange={(e) => handleProxmoxChange('verifySSL', !e.target.checked)}
-                    className="w-4 h-4 text-blue-500 bg-gray-700 rounded focus:ring-2 focus:ring-blue-500"
+                    className="w-4 h-4 text-proxmox-500 bg-gray-700 rounded focus:ring-2 focus:ring-proxmox-500"
                   />
                   <label htmlFor="verifySSL" className="ml-2 text-sm text-gray-300">
                     Ignorer les erreurs de certificat SSL (auto-signé)
@@ -231,7 +231,7 @@ export default function InitialSetup() {
               <button
                 onClick={testProxmoxConnection}
                 disabled={testing || !config.proxmox.host || !config.proxmox.password}
-                className="w-full mt-6 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center"
+                className="w-full mt-6 bg-proxmox-600 hover:bg-proxmox-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center"
               >
                 {testing ? (
                   <>
@@ -251,7 +251,7 @@ export default function InitialSetup() {
           {step === 2 && (
             <div>
               <div className="flex items-center mb-6">
-                <Database className="w-6 h-6 text-blue-400 mr-3" />
+                <Database className="w-6 h-6 text-proxmox-400 mr-3" />
                 <h2 className="text-2xl font-bold text-white">
                   Configuration Proxmox Backup Server (Optionnel)
                 </h2>
@@ -267,7 +267,7 @@ export default function InitialSetup() {
                     value={config.backup.host}
                     onChange={(e) => handleBackupChange('host', e.target.value)}
                     placeholder="https://192.168.1.101:8007"
-                    className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-proxmox-500 outline-none"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Laissez vide si vous n'utilisez pas Proxmox Backup Server
@@ -283,7 +283,7 @@ export default function InitialSetup() {
                     value={config.backup.user}
                     onChange={(e) => handleBackupChange('user', e.target.value)}
                     placeholder="root@pam"
-                    className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-proxmox-500 outline-none"
                   />
                 </div>
 
@@ -296,7 +296,7 @@ export default function InitialSetup() {
                     value={config.backup.password}
                     onChange={(e) => handleBackupChange('password', e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-proxmox-500 outline-none"
                   />
                 </div>
 
@@ -309,7 +309,7 @@ export default function InitialSetup() {
                     value={config.backup.datastore}
                     onChange={(e) => handleBackupChange('datastore', e.target.value)}
                     placeholder="backup"
-                    className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full bg-gray-700 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-proxmox-500 outline-none"
                   />
                 </div>
 
@@ -319,7 +319,7 @@ export default function InitialSetup() {
                     id="backupVerifySSL"
                     checked={!config.backup.verifySSL}
                     onChange={(e) => handleBackupChange('verifySSL', !e.target.checked)}
-                    className="w-4 h-4 text-blue-500 bg-gray-700 rounded focus:ring-2 focus:ring-blue-500"
+                    className="w-4 h-4 text-proxmox-500 bg-gray-700 rounded focus:ring-2 focus:ring-proxmox-500"
                   />
                   <label htmlFor="backupVerifySSL" className="ml-2 text-sm text-gray-300">
                     Ignorer les erreurs de certificat SSL

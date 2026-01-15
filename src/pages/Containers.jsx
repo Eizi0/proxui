@@ -13,6 +13,7 @@ export default function Containers() {
   const [dockerAvailable, setDockerAvailable] = useState(true);
   const [editingContainer, setEditingContainer] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [lxcIPs, setLxcIPs] = useState({});
 
   useEffect(() => {
     fetchContainers();
@@ -43,10 +44,40 @@ export default function Containers() {
       ]);
       setLxcContainers(lxc);
       setDockerContainers(docker);
+      
+      // Fetch IPs for running LXC containers
+      lxc.forEach(container => {
+        if (container.status === 'running') {
+          fetchLXCIP(container.vmid);
+        }
+      });
+      
       setLoading(false);
     } catch (error) {
       console.error('Error fetching containers:', error);
       setLoading(false);
+    }
+  };
+
+  const fetchLXCIP = async (vmid) => {
+    try {
+      const response = await fetch(`/api/proxmox/lxc/${vmid}/interfaces`);
+      const data = await response.json();
+      
+      if (data && Array.isArray(data)) {
+        const iface = data.find(i => 
+          i.name && 
+          i.name.startsWith('eth') && 
+          i.inet
+        );
+        
+        if (iface && iface.inet) {
+          const ip = iface.inet.split('/')[0];
+          setLxcIPs(prev => ({ ...prev, [vmid]: ip }));
+        }
+      }
+    } catch (error) {
+      // Silently fail
     }
   };
 
@@ -127,7 +158,7 @@ export default function Containers() {
       {activeTab === 'lxc' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {lxcContainers.map((container) => (
-            <LXCCard key={container.vmid} container={container} onAction={handleLXCAction} onEdit={handleEditLXC} language={language} />
+            <LXCCard key={container.vmid} container={container} lxcIP={lxcIPs[container.vmid]} onAction={handleLXCAction} onEdit={handleEditLXC} language={language} />
           ))}
           {lxcContainers.length === 0 && (
             <div className="col-span-full card text-center py-12">
@@ -170,7 +201,7 @@ export default function Containers() {
   );
 }
 
-function LXCCard({ container, onAction, onEdit }) {
+function LXCCard({ container, lxcIP, onAction, onEdit }) {
   const isRunning = container.status === 'running';
 
   return (
@@ -198,10 +229,10 @@ function LXCCard({ container, onAction, onEdit }) {
           <span className="text-slate-400">Disque:</span>
           <span>{Math.round((container.maxdisk || 0) / 1024 / 1024 / 1024)} GB</span>
         </div>
-        {container['net0'] && (
+        {lxcIP && (
           <div className="flex justify-between">
             <span className="text-slate-400">IP:</span>
-            <span className="text-xs font-mono">{container['net0'] || 'N/A'}</span>
+            <span className="text-xs font-mono">{lxcIP}</span>
           </div>
         )}
       </div>

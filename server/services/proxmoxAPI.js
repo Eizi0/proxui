@@ -172,6 +172,16 @@ class ProxmoxAPI {
     });
   }
 
+  async getVMInterfaces(vmid, node = this.node) {
+    try {
+      const result = await this.request('GET', `/nodes/${node}/qemu/${vmid}/agent/network-get-interfaces`);
+      return result;
+    } catch (error) {
+      console.error(`Error getting VM ${vmid} interfaces:`, error.message);
+      return null;
+    }
+  }
+
   // LXC Containers
   async getLXCs(node = this.node) {
     return this.request('GET', `/nodes/${node}/lxc`);
@@ -210,6 +220,16 @@ class ProxmoxAPI {
       disk,
       size
     });
+  }
+
+  async getLXCInterfaces(vmid, node = this.node) {
+    try {
+      const result = await this.request('GET', `/nodes/${node}/lxc/${vmid}/interfaces`);
+      return result;
+    } catch (error) {
+      console.error(`Error getting LXC ${vmid} interfaces:`, error.message);
+      return null;
+    }
   }
 
   async createLXC(node, config) {

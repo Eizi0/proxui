@@ -10,6 +10,7 @@ export default function VMs() {
   const [loading, setLoading] = useState(true);
   const [editingVM, setEditingVM] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [vmIPs, setVmIPs] = useState({});
 
   useEffect(() => {
     fetchVMs();
@@ -23,10 +24,42 @@ export default function VMs() {
       const response = await fetch('/api/proxmox/vms');
       const data = await response.json();
       setVMs(data);
+      
+      // Fetch IPs for running VMs
+      data.forEach(vm => {
+        if (vm.status === 'running') {
+          fetchVMIP(vm.vmid);
+        }
+      });
+      
       setLoading(false);
     } catch (error) {
       console.error('Error fetching VMs:', error);
       setLoading(false);
+    }
+  };
+
+  const fetchVMIP = async (vmid) => {
+    try {
+      const response = await fetch(`/api/proxmox/vms/${vmid}/interfaces`);
+      const data = await response.json();
+      
+      if (data && data.result) {
+        const interfaces = data.result.filter(iface => 
+          iface.name !== 'lo' && 
+          iface['ip-addresses'] && 
+          iface['ip-addresses'].length > 0
+        );
+        
+        if (interfaces.length > 0) {
+          const ipv4 = interfaces[0]['ip-addresses'].find(ip => ip['ip-address-type'] === 'ipv4');
+          if (ipv4) {
+            setVmIPs(prev => ({ ...prev, [vmid]: ipv4['ip-address'] }));
+          }
+        }
+      }
+    } catch (error) {
+      // Silently fail if guest agent is not available
     }
   };
 
@@ -69,7 +102,7 @@ export default function VMs() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {vms.map((vm) => (
-          <VMCard key={vm.vmid} vm={vm} onAction={handleAction} onEdit={handleEdit} language={language} />
+          <VMCard key={vm.vmid} vm={vm} vmIP={vmIPs[vm.vmid]} onAction={handleAction} onEdit={handleEdit} language={language} />
         ))}
       </div>
 
@@ -90,7 +123,7 @@ export default function VMs() {
   );
 }
 
-function VMCard({ vm, onAction, onEdit, language }) {
+function VMCard({ vm, vmIP, onAction, onEdit, language }) {
   const isRunning = vm.status === 'running';
 
   return (
@@ -118,10 +151,10 @@ function VMCard({ vm, onAction, onEdit, language }) {
           <span className="text-slate-400">Disque:</span>
           <span>{Math.round((vm.maxdisk || 0) / 1024 / 1024 / 1024)} GB</span>
         </div>
-        {vm.agent && vm['net0'] && (
+        {vmIP && (
           <div className="flex justify-between">
             <span className="text-slate-400">IP:</span>
-            <span className="text-xs font-mono">{vm['net0'] || 'N/A'}</span>
+            <span className="text-xs font-mono">{vmIP}</span>
           </div>
         )}
         {isRunning && vm.cpu && (
