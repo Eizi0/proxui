@@ -449,6 +449,19 @@ router.get('/nodes/:node/services', async (req, res) => {
   }
 });
 
+// Control node service (start, stop, restart, reload)
+router.post('/nodes/:node/services/:service/:action', async (req, res) => {
+  try {
+    console.log(`📡 API Call: POST /api/proxmox/nodes/${req.params.node}/services/${req.params.service}/${req.params.action}`);
+    const result = await proxmoxAPI.controlNodeService(req.params.node, req.params.service, req.params.action);
+    console.log(`✅ Service ${req.params.service} ${req.params.action} sur node ${req.params.node}`);
+    res.json(result);
+  } catch (error) {
+    console.error(`❌ Erreur contrôle service:`, error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get node version
 router.get('/nodes/:node/version', async (req, res) => {
   try {

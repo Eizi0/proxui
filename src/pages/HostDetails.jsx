@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Server, Cpu, HardDrive, Activity, Clock, Package, Play, Pause, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Server, Cpu, HardDrive, Activity, Clock, Package, Play, Pause, RotateCw, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 function HostDetails() {
   const { node } = useParams();
@@ -13,6 +13,7 @@ function HostDetails() {
   const [vms, setVms] = useState([]);
   const [containers, setContainers] = useState([]);
   const [version, setVersion] = useState(null);
+  const [controllingService, setControllingService] = useState(null);
 
   useEffect(() => {
     fetchAllData();
@@ -28,8 +29,8 @@ function HostDetails() {
         fetch(`/api/proxmox/nodes/${node}/rrddata?timeframe=hour`).catch(e => ({ ok: false, error: e })),
         fetch(`/api/proxmox/nodes/${node}/tasks?limit=10`).catch(e => ({ ok: false, error: e })),
         fetch(`/api/proxmox/nodes/${node}/services`).catch(e => ({ ok: false, error: e })),
-        fetch(`/api/proxmox/vms`).catch(e => ({ ok: false, error: e })),
-        fetch(`/api/proxmox/lxc`).catch(e => ({ ok: false, error: e })),
+        fetch(`/api/proxmox/resources?type=vm&node=${node}`).catch(e => ({ ok: false, error: e })),
+        fetch(`/api/proxmox/resources?type=lxc&node=${node}`).catch(e => ({ ok: false, error: e })),
         fetch(`/api/proxmox/nodes/${node}/version`).catch(e => ({ ok: false, error: e }))
       ]);
 
@@ -47,17 +48,40 @@ function HostDetails() {
       const containerList = containersRes.ok ? await containersRes.json() : [];
       const ver = versionRes.ok ? await versionRes.json() : null;
       
+      // Filter to show only key Proxmox services (max 6)
+      const proxmoxServices = ['pvedaemon', 'pveproxy', 'pve-cluster', 'pvestatd', 'pve-firewall', 'lxcfs'];
+      const filteredServices = Array.isArray(serviceList) 
+        ? serviceList.filter(s => proxmoxServices.includes(s.name))
+        : [];
+      
       setNodeInfo(info);
       setRrdData(rrd);
       setTasks(Array.isArray(taskList) ? taskList : []);
-      setServices(Array.isArray(serviceList) ? serviceList : []);
-      setVms(Array.isArray(vmList) ? vmList.filter(vm => vm.node === node) : []);
-      setContainers(Array.isArray(containerList) ? containerList.filter(ct => ct.node === node) : []);
+      setServices(filteredServices);
+      setVms(Array.isArray(vmList) ? vmList : []);
+      setContainers(Array.isArray(containerList) ? containerList : []);
       setVersion(ver);
       setLoading(false);
     } catch (error) {
       console.error('Error loading host details:', error);
       setLoading(false);
+    }
+  };
+
+  const handleServiceControl = async (serviceName, action) => {
+    setControllingService(`${serviceName}-${action}`);
+    try {
+      await fetch(`/api/proxmox/nodes/${node}/services/${serviceName}/${action}`, {
+        method: 'POST'
+      });
+      // Refresh services after action
+      setTimeout(() => {
+        fetchAllData();
+        setControllingService(null);
+      }, 2000);
+    } catch (error) {
+      console.error(`Error controlling service ${serviceName}:`, error);
+      setControllingService(null);
     }
   };
 
@@ -283,19 +307,65 @@ function HostDetails() {
           <Play className="w-6 h-6 mr-2 text-green-500" />
           Services Système
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {services.length === 0 ? (
-            <p className="text-slate-400 col-span-3 text-center py-4">Aucun service disponible</p>
+            <p className="text-slate-400 col-span-2 text-center py-4">Aucun service disponible</p>
           ) : (
-            services.slice(0, 12).map((service, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  {getStatusIcon(service.state)}
-                  <span className="font-medium text-white">{service.name}</span>
+            services.map((service, idx) => (
+              <div key={idx} className="p-4 bg-slate-700/50 rounded-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    {getStatusIcon(service.state)}
+                    <span className="font-medium text-white">{service.name || service.service}</span>
+                  </div>
+                  <span className={`text-sm px-2 py-1 rounded ${
+                    service.state === 'running' ? 'bg-green-500/20 text-green-400' : 
+                    service.state === 'stopped' ? 'bg-red-500/20 text-red-400' :
+                    'bg-slate-500/20 text-slate-400'
+                  }`}>
+                    {service.state}
+                  </span>
                 </div>
-                <span className={`text-sm ${service.state === 'running' ? 'text-green-500' : 'text-slate-500'}`}>
-                  {service.state}
-                </span>
+                <div className="flex space-x-2">
+                  {service.state === 'running' ? (
+                    <>
+                      <button
+                        onClick={() => handleServiceControl(service.name || service.service, 'stop')}
+                        disabled={controllingService === `${service.name || service.service}-stop`}
+                        className="btn btn-danger text-xs flex-1"
+                      >
+                        {controllingService === `${service.name || service.service}-stop` ? (
+                          <><div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white inline-block mr-1"></div> Arrêt...</>
+                        ) : (
+                          <><Pause size={12} className="inline mr-1" /> Arrêter</>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleServiceControl(service.name || service.service, 'restart')}
+                        disabled={controllingService === `${service.name || service.service}-restart`}
+                        className="btn btn-secondary text-xs flex-1"
+                      >
+                        {controllingService === `${service.name || service.service}-restart` ? (
+                          <><div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white inline-block mr-1"></div> Redém...</>
+                        ) : (
+                          <><RotateCw size={12} className="inline mr-1" /> Redémarrer</>
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => handleServiceControl(service.name || service.service, 'start')}
+                      disabled={controllingService === `${service.name || service.service}-start`}
+                      className="btn btn-success text-xs w-full"
+                    >
+                      {controllingService === `${service.name || service.service}-start` ? (
+                        <><div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white inline-block mr-1"></div> Démarrage...</>
+                      ) : (
+                        <><Play size={12} className="inline mr-1" /> Démarrer</>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
             ))
           )}

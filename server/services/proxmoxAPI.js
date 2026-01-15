@@ -129,7 +129,9 @@ class ProxmoxAPI {
   }
 
   async getNodeStatus(node = this.node) {
-    return this.request('GET', `/nodes/${node}/status`);
+    const data = await this.request('GET', `/nodes/${node}/status`);
+    // Si data est un array, prendre le premier élément, sinon retourner data directement
+    return Array.isArray(data) && data.length > 0 ? data[0] : data;
   }
 
   // VMs
@@ -315,7 +317,12 @@ class ProxmoxAPI {
 
   // Node Details
   async getNodeInfo(node = this.node) {
-    return this.request('GET', `/nodes/${node}/status`);
+    const [status, version] = await Promise.all([
+      this.request('GET', `/nodes/${node}/status`),
+      this.request('GET', `/nodes/${node}/version`).catch(() => ({}))
+    ]);
+    const statusData = Array.isArray(status) && status.length > 0 ? status[0] : status;
+    return { ...statusData, ...version };
   }
 
   async getNodeRRDData(node = this.node, timeframe = 'hour') {
@@ -323,11 +330,18 @@ class ProxmoxAPI {
   }
 
   async getNodeTasks(node = this.node, limit = 50) {
-    return this.request('GET', `/nodes/${node}/tasks?limit=${limit}`);
+    const data = await this.request('GET', `/nodes/${node}/tasks?limit=${limit}`);
+    return Array.isArray(data) ? data : [];
   }
 
   async getNodeServices(node = this.node) {
-    return this.request('GET', `/nodes/${node}/services`);
+    const data = await this.request('GET', `/nodes/${node}/services`);
+    return Array.isArray(data) ? data : [];
+  }
+
+  async controlNodeService(node, service, action) {
+    // action can be: start, stop, restart, reload
+    return this.request('POST', `/nodes/${node}/services/${service}/${action}`);
   }
 
   async getNodeTime(node = this.node) {

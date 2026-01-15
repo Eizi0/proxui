@@ -57,7 +57,18 @@ export default function Dashboard() {
     try {
       const response = await fetch(`/api/proxmox/nodes/${nodeName}/status`);
       const data = await response.json();
-      setNodeStats(data);
+      
+      // Transform the data to match expected format
+      const transformed = {
+        cpu: data.cpu || 0,
+        mem: data.memory?.used || 0,
+        maxmem: data.memory?.total || 0,
+        disk: data.rootfs?.used || 0,
+        maxdisk: data.rootfs?.total || 0,
+        uptime: data.uptime || 0
+      };
+      
+      setNodeStats(transformed);
     } catch (error) {
       console.error('Error fetching node stats:', error);
     }
