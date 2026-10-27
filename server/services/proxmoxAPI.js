@@ -341,6 +341,14 @@ class ProxmoxAPI {
     return this.request('GET', `/nodes/${node}/rrddata?timeframe=${timeframe}`);
   }
 
+  async getVMRRDData(vmid, node = this.node, timeframe = 'hour') {
+    return this.request('GET', `/nodes/${node}/qemu/${vmid}/rrddata?timeframe=${timeframe}`);
+  }
+
+  async getLXCRRDData(vmid, node = this.node, timeframe = 'hour') {
+    return this.request('GET', `/nodes/${node}/lxc/${vmid}/rrddata?timeframe=${timeframe}`);
+  }
+
   async getNodeTasks(node = this.node, limit = 50) {
     const data = await this.request('GET', `/nodes/${node}/tasks?limit=${limit}`);
     return Array.isArray(data) ? data : [];

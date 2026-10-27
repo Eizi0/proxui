@@ -89,6 +89,36 @@ function rrd(node, metricKeys) {
   });
 }
 
+function vmRrd(vmid, maxmem) {
+  const now = Math.floor(Date.now() / 1000);
+  const seed = (vmid % 7) + 1;
+  return Array.from({ length: 24 }, (_, i) => {
+    const t = now - (23 - i) * 150;
+    const wave = Math.abs(Math.sin(i / 2.5 + seed)) * 0.35 + 0.45;
+    return {
+      time: t,
+      cpu: Math.min(0.97, wave),
+      mem: Math.floor((maxmem || 1073741824) * Math.min(0.95, wave * 0.9)),
+      maxmem: maxmem || 1073741824,
+      diskread: Math.floor(wave * 20000000),
+      diskwrite: Math.floor(wave * 9000000),
+      netin: Math.floor(wave * 15000000),
+      netout: Math.floor(wave * 8000000),
+    };
+  });
+}
+
+// Quelques snapshots réalistes, pour que l'onglet Snapshots ait un contenu
+// qui ressemble à un vrai historique plutôt qu'une liste vide partout.
+const SNAPSHOTS_BY_VMID = {
+  101: [
+    { name: 'avant-migration-pg16', description: 'Avant mise à jour PostgreSQL 16', snaptime: Math.floor(Date.now() / 1000) - 480 },
+    { name: 'hebdo-2026-10-20', description: 'Snapshot hebdomadaire automatique', snaptime: Math.floor(Date.now() / 1000) - 604800 },
+    { name: 'hebdo-2026-10-13', description: 'Snapshot hebdomadaire automatique', snaptime: Math.floor(Date.now() / 1000) - 1209600 },
+    { name: 'avant-upgrade-debian12', description: 'Avant passage à Debian 12', snaptime: Math.floor(Date.now() / 1000) - 2592000 },
+  ],
+};
+
 const TASKS_BY_NODE = {
   'pve-node-01': [
     { upid: 'UPID:pve-node-01:00001A2B:snapshot', node: 'pve-node-01', type: 'qmsnapshot', id: '101', user: 'root@pam', status: 'OK', starttime: Math.floor(Date.now() / 1000) - 480 },
@@ -148,6 +178,14 @@ export function resolveDemoEndpoint(method, endpoint) {
   }
   if ((m = path.match(/^\/nodes\/([^/]+)\/rrddata$/)) && method === 'GET') {
     return rrd(m[1], ['cpu', 'memused', 'netin', 'netout']);
+  }
+  if ((m = path.match(/^\/nodes\/([^/]+)\/(qemu|lxc)\/(\d+)\/rrddata$/)) && method === 'GET') {
+    const bucket = m[2] === 'qemu' ? QEMU_BY_NODE : LXC_BY_NODE;
+    const vm = (bucket[m[1]] || []).find((v) => String(v.vmid) === m[3]);
+    return vmRrd(Number(m[3]), vm?.maxmem);
+  }
+  if ((m = path.match(/^\/nodes\/([^/]+)\/(qemu|lxc)\/(\d+)\/snapshot$/)) && method === 'GET') {
+    return SNAPSHOTS_BY_VMID[Number(m[3])] || [];
   }
   if ((m = path.match(/^\/nodes\/([^/]+)\/tasks$/)) && method === 'GET') {
     return TASKS_BY_NODE[m[1]] || [];

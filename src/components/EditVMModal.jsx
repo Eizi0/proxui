@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Loader, Save, HardDrive, Cpu, MemoryStick, Network } from 'lucide-react';
 
-export default function EditVMModal({ vmid, isOpen, onClose, onSave }) {
+export default function EditVMModal({ vmid, node, isOpen, onClose, onSave }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState(null);
@@ -22,7 +22,7 @@ export default function EditVMModal({ vmid, isOpen, onClose, onSave }) {
   const fetchConfig = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/proxmox/vms/${vmid}/config`);
+      const response = await fetch(`/api/proxmox/vms/${vmid}/config${node ? `?node=${node}` : ''}`);
       const data = await response.json();
       setConfig(data);
       setFormData({
@@ -61,7 +61,7 @@ export default function EditVMModal({ vmid, isOpen, onClose, onSave }) {
         onboot: formData.onboot ? 1 : 0,
       };
 
-      const response = await fetch(`/api/proxmox/vms/${vmid}/config`, {
+      const response = await fetch(`/api/proxmox/vms/${vmid}/config${node ? `?node=${node}` : ''}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -20,7 +20,7 @@ export default function VMs() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('all');
   const [query, setQuery] = useState('');
-  const [editingVM, setEditingVM] = useState(null);
+  const [editing, setEditing] = useState(null); // { vmid, node }
 
   useEffect(() => {
     load();
@@ -43,7 +43,7 @@ export default function VMs() {
   const handleAction = async (r, action) => {
     const base = r.type === 'lxc' ? '/api/proxmox/lxc' : '/api/proxmox/vms';
     try {
-      await fetch(`${base}/${r.vmid}/${action}`, { method: 'POST' });
+      await fetch(`${base}/${r.vmid}/${action}?node=${r.node}`, { method: 'POST' });
       setTimeout(load, 1200);
     } catch (error) {
       console.error(`Erreur action ${action}:`, error);
@@ -152,7 +152,7 @@ export default function VMs() {
                       )}
                       {r.type === 'qemu' && (
                         <button
-                          onClick={() => setEditingVM(r.vmid)}
+                          onClick={() => setEditing({ vmid: r.vmid, node: r.node })}
                           title="Modifier"
                           className="w-7 h-7 rounded-md border border-graphite-600 bg-graphite-800 flex items-center justify-center text-graphite-200 hover:text-graphite-50"
                         >
@@ -175,10 +175,11 @@ export default function VMs() {
       </div>
 
       <EditVMModal
-        vmid={editingVM}
-        isOpen={!!editingVM}
-        onClose={() => setEditingVM(null)}
-        onSave={() => { setEditingVM(null); load(); }}
+        vmid={editing?.vmid}
+        node={editing?.node}
+        isOpen={!!editing}
+        onClose={() => setEditing(null)}
+        onSave={() => { setEditing(null); load(); }}
       />
     </div>
   );

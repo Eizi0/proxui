@@ -118,11 +118,19 @@ router.get('/resources', async (req, res) => {
   }
 });
 
+// Routes "/vms/:vmid*" et "/lxc/:vmid*" : Proxmox scope ces ressources par
+// nœud (/nodes/{node}/qemu/{vmid}/...), mais ces routes ne prenaient pas de
+// nœud en entrée et retombaient donc toujours sur le nœud par défaut unique
+// de la config — cassé pour toute VM/CT qui n'est pas sur ce nœud précis,
+// sur un vrai cluster à plusieurs nœuds. On lit maintenant `?node=` (le
+// frontend le connaît déjà, via /api/stats/recent-resources) et on ne
+// retombe sur le nœud par défaut que si l'appelant ne le précise pas.
+
 // Get VM network interfaces (IP addresses)
 router.get('/vms/:vmid/interfaces', async (req, res) => {
   try {
     console.log(`📡 API Call: GET /api/proxmox/vms/${req.params.vmid}/interfaces`);
-    const interfaces = await proxmoxAPI.getVMInterfaces(req.params.vmid);
+    const interfaces = await proxmoxAPI.getVMInterfaces(req.params.vmid, req.query.node);
     res.json(interfaces || []);
   } catch (error) {
     console.error('❌ Error getting VM interfaces:', error.message);
@@ -133,7 +141,7 @@ router.get('/vms/:vmid/interfaces', async (req, res) => {
 // Get VM status
 router.get('/vms/:vmid', async (req, res) => {
   try {
-    const status = await proxmoxAPI.getVMStatus(req.params.vmid);
+    const status = await proxmoxAPI.getVMStatus(req.params.vmid, req.query.node);
     res.json(status);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -143,7 +151,7 @@ router.get('/vms/:vmid', async (req, res) => {
 // Start VM
 router.post('/vms/:vmid/start', async (req, res) => {
   try {
-    const result = await proxmoxAPI.startVM(req.params.vmid);
+    const result = await proxmoxAPI.startVM(req.params.vmid, req.query.node);
     res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -153,7 +161,7 @@ router.post('/vms/:vmid/start', async (req, res) => {
 // Stop VM
 router.post('/vms/:vmid/stop', async (req, res) => {
   try {
-    const result = await proxmoxAPI.stopVM(req.params.vmid);
+    const result = await proxmoxAPI.stopVM(req.params.vmid, req.query.node);
     res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -163,7 +171,7 @@ router.post('/vms/:vmid/stop', async (req, res) => {
 // Shutdown VM
 router.post('/vms/:vmid/shutdown', async (req, res) => {
   try {
-    const result = await proxmoxAPI.shutdownVM(req.params.vmid);
+    const result = await proxmoxAPI.shutdownVM(req.params.vmid, req.query.node);
     res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -173,8 +181,18 @@ router.post('/vms/:vmid/shutdown', async (req, res) => {
 // Reboot VM
 router.post('/vms/:vmid/reboot', async (req, res) => {
   try {
-    const result = await proxmoxAPI.rebootVM(req.params.vmid);
+    const result = await proxmoxAPI.rebootVM(req.params.vmid, req.query.node);
     res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get VM historical metrics (for resource graphs)
+router.get('/vms/:vmid/rrddata', async (req, res) => {
+  try {
+    const data = await proxmoxAPI.getVMRRDData(req.params.vmid, req.query.node, req.query.timeframe || 'hour');
+    res.json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -184,7 +202,7 @@ router.post('/vms/:vmid/reboot', async (req, res) => {
 router.get('/vms/:vmid/config', async (req, res) => {
   try {
     console.log('📡 API Call: GET /api/proxmox/vms/:vmid/config');
-    const config = await proxmoxAPI.getVMConfig(req.params.vmid);
+    const config = await proxmoxAPI.getVMConfig(req.params.vmid, req.query.node);
     res.json(config);
   } catch (error) {
     console.error('❌ Erreur GET /vms/:vmid/config:', error.message);
@@ -197,7 +215,7 @@ router.put('/vms/:vmid/config', async (req, res) => {
   try {
     console.log('📡 API Call: PUT /api/proxmox/vms/:vmid/config');
     console.log('📋 Update Config:', JSON.stringify(req.body, null, 2));
-    const result = await proxmoxAPI.updateVMConfig(req.params.vmid, req.body);
+    const result = await proxmoxAPI.updateVMConfig(req.params.vmid, req.body, req.query.node);
     console.log('✅ VM config updated successfully');
     res.json(result);
   } catch (error) {
@@ -211,7 +229,7 @@ router.put('/vms/:vmid/resize', async (req, res) => {
   try {
     console.log('📡 API Call: PUT /api/proxmox/vms/:vmid/resize');
     const { disk, size } = req.body;
-    const result = await proxmoxAPI.resizeVMDisk(req.params.vmid, disk, size);
+    const result = await proxmoxAPI.resizeVMDisk(req.params.vmid, disk, size, req.query.node);
     console.log('✅ VM disk resized successfully');
     res.json(result);
   } catch (error) {
@@ -233,7 +251,7 @@ router.get('/lxc', async (req, res) => {
 // Get LXC status
 router.get('/lxc/:vmid', async (req, res) => {
   try {
-    const status = await proxmoxAPI.getLXCStatus(req.params.vmid);
+    const status = await proxmoxAPI.getLXCStatus(req.params.vmid, req.query.node);
     res.json(status);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -243,7 +261,7 @@ router.get('/lxc/:vmid', async (req, res) => {
 // Start LXC
 router.post('/lxc/:vmid/start', async (req, res) => {
   try {
-    const result = await proxmoxAPI.startLXC(req.params.vmid);
+    const result = await proxmoxAPI.startLXC(req.params.vmid, req.query.node);
     res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -253,7 +271,7 @@ router.post('/lxc/:vmid/start', async (req, res) => {
 // Stop LXC
 router.post('/lxc/:vmid/stop', async (req, res) => {
   try {
-    const result = await proxmoxAPI.stopLXC(req.params.vmid);
+    const result = await proxmoxAPI.stopLXC(req.params.vmid, req.query.node);
     res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -263,7 +281,7 @@ router.post('/lxc/:vmid/stop', async (req, res) => {
 // Shutdown LXC
 router.post('/lxc/:vmid/shutdown', async (req, res) => {
   try {
-    const result = await proxmoxAPI.shutdownLXC(req.params.vmid);
+    const result = await proxmoxAPI.shutdownLXC(req.params.vmid, req.query.node);
     res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -273,7 +291,7 @@ router.post('/lxc/:vmid/shutdown', async (req, res) => {
 // Reboot LXC
 router.post('/lxc/:vmid/reboot', async (req, res) => {
   try {
-    const result = await proxmoxAPI.rebootLXC(req.params.vmid);
+    const result = await proxmoxAPI.rebootLXC(req.params.vmid, req.query.node);
     res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -284,10 +302,20 @@ router.post('/lxc/:vmid/reboot', async (req, res) => {
 router.get('/lxc/:vmid/interfaces', async (req, res) => {
   try {
     console.log(`📡 API Call: GET /api/proxmox/lxc/${req.params.vmid}/interfaces`);
-    const interfaces = await proxmoxAPI.getLXCInterfaces(req.params.vmid);
+    const interfaces = await proxmoxAPI.getLXCInterfaces(req.params.vmid, req.query.node);
     res.json(interfaces || []);
   } catch (error) {
     console.error('❌ Error getting LXC interfaces:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get LXC historical metrics (for resource graphs)
+router.get('/lxc/:vmid/rrddata', async (req, res) => {
+  try {
+    const data = await proxmoxAPI.getLXCRRDData(req.params.vmid, req.query.node, req.query.timeframe || 'hour');
+    res.json(data);
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
@@ -296,7 +324,7 @@ router.get('/lxc/:vmid/interfaces', async (req, res) => {
 router.get('/lxc/:vmid/config', async (req, res) => {
   try {
     console.log('📡 API Call: GET /api/proxmox/lxc/:vmid/config');
-    const config = await proxmoxAPI.getLXCConfig(req.params.vmid);
+    const config = await proxmoxAPI.getLXCConfig(req.params.vmid, req.query.node);
     res.json(config);
   } catch (error) {
     console.error('❌ Erreur GET /lxc/:vmid/config:', error.message);
@@ -309,7 +337,7 @@ router.put('/lxc/:vmid/config', async (req, res) => {
   try {
     console.log('📡 API Call: PUT /api/proxmox/lxc/:vmid/config');
     console.log('📋 Update Config:', JSON.stringify(req.body, null, 2));
-    const result = await proxmoxAPI.updateLXCConfig(req.params.vmid, req.body);
+    const result = await proxmoxAPI.updateLXCConfig(req.params.vmid, req.body, req.query.node);
     console.log('✅ LXC config updated successfully');
     res.json(result);
   } catch (error) {
@@ -323,7 +351,7 @@ router.put('/lxc/:vmid/resize', async (req, res) => {
   try {
     console.log('📡 API Call: PUT /api/proxmox/lxc/:vmid/resize');
     const { disk, size } = req.body;
-    const result = await proxmoxAPI.resizeLXCDisk(req.params.vmid, disk, size);
+    const result = await proxmoxAPI.resizeLXCDisk(req.params.vmid, disk, size, req.query.node);
     console.log('✅ LXC disk resized successfully');
     res.json(result);
   } catch (error) {

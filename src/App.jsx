@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Hosts from './pages/Hosts';
 import HostDetails from './pages/HostDetails';
 import VMs from './pages/VMs';
+import VMDetail from './pages/VMDetail';
 import Containers from './pages/Containers';
 import Storages from './pages/Storages';
 import Network from './pages/Network';
@@ -74,6 +75,7 @@ function AppContent() {
           <Route path="/hosts" element={<Hosts />} />
           <Route path="/hosts/:node" element={<HostDetails />} />
           <Route path="/vms" element={<VMs />} />
+          <Route path="/vms/:vmid" element={<VMDetail />} />
           <Route path="/containers" element={<Containers />} />
           <Route path="/storages" element={<Storages />} />
           <Route path="/network" element={<Network />} />
