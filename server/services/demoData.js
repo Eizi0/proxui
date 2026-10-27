@@ -63,6 +63,15 @@ const LXC_BY_NODE = {
 
 const VERSION = { version: '8.3.1', release: '8.3', repoid: 'c1689ccb1065a83b' };
 
+const SERVICES = [
+  { name: 'pvedaemon', service: 'pvedaemon', state: 'running', desc: 'PVE API Daemon' },
+  { name: 'pveproxy', service: 'pveproxy', state: 'running', desc: 'PVE API Proxy Server' },
+  { name: 'pve-cluster', service: 'pve-cluster', state: 'running', desc: 'The Proxmox VE cluster filesystem' },
+  { name: 'pvestatd', service: 'pvestatd', state: 'running', desc: 'PVE Status Daemon' },
+  { name: 'pve-firewall', service: 'pve-firewall', state: 'running', desc: 'Proxmox VE firewall' },
+  { name: 'lxcfs', service: 'lxcfs', state: 'running', desc: 'FUSE filesystem for LXC' },
+];
+
 function rrd(node, metricKeys) {
   // 24 points représentant la dernière heure (une donnée toutes les 150s, comme Proxmox 'hour')
   const now = Math.floor(Date.now() / 1000);
@@ -101,7 +110,8 @@ const TASKS_BY_NODE = {
  * place dans les routes Express).
  */
 export function resolveDemoEndpoint(method, endpoint) {
-  const path = endpoint.split('?')[0];
+  const [path, qs] = endpoint.split('?');
+  const query = new URLSearchParams(qs || '');
   let m;
 
   if (method === 'GET' && path === '/nodes') return NODES;
@@ -147,7 +157,12 @@ export function resolveDemoEndpoint(method, endpoint) {
     for (const [node, lxcs] of Object.entries(LXC_BY_NODE)) {
       for (const lxc of lxcs) all.push({ ...lxc, type: 'lxc', node, id: `lxc/${lxc.vmid}` });
     }
-    return all;
+    const type = query.get('type');
+    return type ? all.filter((r) => r.type === type) : all;
+  }
+
+  if ((m = path.match(/^\/nodes\/([^/]+)\/services$/)) && method === 'GET') {
+    return SERVICES;
   }
 
   return undefined;

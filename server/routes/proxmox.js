@@ -94,15 +94,22 @@ router.get('/vms', async (req, res) => {
   }
 });
 
-// Get cluster resources with optional node filter
+// Get cluster resources, with optional node and type filters.
+// NOTE : il existait auparavant deux définitions de cette route (ici et
+// plus bas), chacune ne gérant qu'un seul des deux filtres. Express ne
+// retient que la première route enregistrée pour un chemin donné, donc la
+// seconde (qui gérait `type`) était du code mort — le filtre `type` était
+// silencieusement ignoré partout où on l'utilisait (ex. HostDetails.jsx
+// avec `?type=vm&node=...`). Fusionné en une seule route ici.
 router.get('/resources', async (req, res) => {
   try {
-    const { node } = req.query;
-    console.log(`📡 API Call: GET /api/proxmox/resources${node ? `?node=${node}` : ''}`);
-    const resources = await proxmoxAPI.getResources();
-    
-    // Filter by node if specified
-    const filtered = node ? resources.filter(r => r.node === node) : resources;
+    const { node, type } = req.query;
+    console.log(`📡 API Call: GET /api/proxmox/resources${node ? `?node=${node}` : ''}${type ? `${node ? '&' : '?'}type=${type}` : ''}`);
+    // getResources(type) applique déjà le filtre Proxmox `?type=` côté API
+    // (qemu|lxc|node|storage...) ; notre alias `vm` correspond à `qemu`.
+    const resources = await proxmoxAPI.getResources(type === 'vm' ? 'qemu' : type);
+
+    const filtered = node ? resources.filter((r) => r.node === node) : resources;
     console.log(`✅ Resources récupérées: ${filtered.length}${node ? ` pour node ${node}` : ''}`);
     res.json(filtered);
   } catch (error) {
@@ -335,17 +342,6 @@ router.post('/nodes/:node/lxc', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('❌ Erreur POST /nodes/:node/lxc:', error.message);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get all resources
-router.get('/resources', async (req, res) => {
-  try {
-    const { type } = req.query;
-    const resources = await proxmoxAPI.getResources(type);
-    res.json(resources);
-  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
