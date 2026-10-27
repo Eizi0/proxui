@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import expressWs from 'express-ws';
 
 // Routes
@@ -62,8 +62,21 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 ProxUI Server running on port ${PORT}`);
-  console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Proxmox Host: ${process.env.PROXMOX_HOST}`);
-});
+// N'écoute sur le port que lorsque ce fichier est exécuté directement
+// (`node server/index.js`), pas lorsqu'il est importé — nécessaire pour
+// pouvoir tester `app` avec supertest sans ouvrir un vrai port.
+// NOTE : comparer import.meta.url à `file://${process.argv[1]}` tel quel
+// échoue silencieusement dès que le chemin contient des espaces (le cas
+// ici, "Personal - Projects") — import.meta.url encode l'espace en %20,
+// pas process.argv[1]. pathToFileURL() applique le même encodage des deux
+// côtés avant de comparer.
+const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMainModule) {
+  app.listen(PORT, () => {
+    console.log(`🚀 ProxUI Server running on port ${PORT}`);
+    console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔗 Proxmox Host: ${process.env.PROXMOX_HOST}`);
+  });
+}
+
+export default app;
