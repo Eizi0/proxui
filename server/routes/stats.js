@@ -152,8 +152,10 @@ router.get('/recent-resources', async (req, res) => {
     // Trier par utilisation CPU décroissante (les plus utilisés en premier)
     allResources.sort((a, b) => parseFloat(b.cpuUsage) - parseFloat(a.cpuUsage));
 
-    // Limiter aux 20 premiers
-    const recentResources = allResources.slice(0, 20);
+    // Limite par défaut adaptée au tableau de bord (top 20) ; la page de
+    // liste complète des VM passe ?limit= élevé pour obtenir tout le parc.
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const recentResources = allResources.slice(0, limit);
 
     res.json(recentResources);
   } catch (error) {

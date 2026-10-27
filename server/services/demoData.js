@@ -122,11 +122,15 @@ export function resolveDemoEndpoint(method, endpoint) {
   if ((m = path.match(/^\/nodes\/([^/]+)\/version$/)) && method === 'GET') {
     return VERSION;
   }
+  // Proxmox est incohérent entre ses propres endpoints : la liste par nœud
+  // (/nodes/{node}/qemu) nomme le champ `cpus`, tandis que /cluster/resources
+  // le nomme `maxcpu`. On fournit les deux pour que le frontend, qui lit
+  // l'un ou l'autre selon l'écran, fonctionne dans les deux cas.
   if ((m = path.match(/^\/nodes\/([^/]+)\/qemu$/)) && method === 'GET') {
-    return QEMU_BY_NODE[m[1]] || [];
+    return (QEMU_BY_NODE[m[1]] || []).map((v) => ({ ...v, cpus: v.maxcpu }));
   }
   if ((m = path.match(/^\/nodes\/([^/]+)\/lxc$/)) && method === 'GET') {
-    return LXC_BY_NODE[m[1]] || [];
+    return (LXC_BY_NODE[m[1]] || []).map((v) => ({ ...v, cpus: v.maxcpu }));
   }
   if ((m = path.match(/^\/nodes\/([^/]+)\/qemu\/(\d+)\/status\/current$/)) && method === 'GET') {
     const vm = (QEMU_BY_NODE[m[1]] || []).find((v) => String(v.vmid) === m[2]);
