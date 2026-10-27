@@ -7,12 +7,21 @@ const router = express.Router();
 // Get overview stats
 router.get('/overview', async (req, res) => {
   try {
-    const [nodes, vms, lxcs, resources] = await Promise.all([
-      proxmoxAPI.getNodes().catch(() => []),
-      proxmoxAPI.getVMs().catch(() => []),
-      proxmoxAPI.getLXCs().catch(() => []),
-      proxmoxAPI.getResources().catch(() => []),
-    ]);
+    const nodes = await proxmoxAPI.getNodes().catch(() => []);
+
+    // getVMs()/getLXCs() ne portent que sur un seul nœud (leur défaut) : sur
+    // un cluster à plusieurs nœuds, il faut interroger chaque nœud et fusionner.
+    const perNode = await Promise.all(
+      nodes.map((n) =>
+        Promise.all([
+          proxmoxAPI.getVMs(n.node).catch(() => []),
+          proxmoxAPI.getLXCs(n.node).catch(() => []),
+        ])
+      )
+    );
+    const vms = perNode.flatMap(([v]) => v);
+    const lxcs = perNode.flatMap(([, l]) => l);
+    const resources = await proxmoxAPI.getResources().catch(() => []);
 
     let dockerContainers = [];
     if (dockerAPI.available) {
@@ -104,10 +113,21 @@ router.get('/resources', async (req, res) => {
 // Get recent VMs and Containers
 router.get('/recent-resources', async (req, res) => {
   try {
-    const [vms, lxcs] = await Promise.all([
-      proxmoxAPI.getVMs().catch(() => []),
-      proxmoxAPI.getLXCs().catch(() => []),
-    ]);
+    const nodes = await proxmoxAPI.getNodes().catch(() => []);
+    const perNode = await Promise.all(
+      nodes.map(async (n) => {
+        const [nodeVms, nodeLxcs] = await Promise.all([
+          proxmoxAPI.getVMs(n.node).catch(() => []),
+          proxmoxAPI.getLXCs(n.node).catch(() => []),
+        ]);
+        return {
+          vms: nodeVms.map((vm) => ({ ...vm, node: n.node })),
+          lxcs: nodeLxcs.map((lxc) => ({ ...lxc, node: n.node })),
+        };
+      })
+    );
+    const vms = perNode.flatMap((p) => p.vms);
+    const lxcs = perNode.flatMap((p) => p.lxcs);
 
     // Combiner VMs et LXCs
     const allResources = [
@@ -136,6 +156,26 @@ router.get('/recent-resources', async (req, res) => {
     const recentResources = allResources.slice(0, 20);
 
     res.json(recentResources);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Journal d'activité agrégé sur tous les nœuds (vue "Activité récente" du
+// tableau de bord) — proxmoxAPI.getNodeTasks() ne porte que sur un nœud,
+// donc on interroge chaque nœud puis on fusionne par date de début.
+router.get('/activity', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 15;
+    const nodes = await proxmoxAPI.getNodes().catch(() => []);
+    const perNode = await Promise.all(
+      nodes.map((n) => proxmoxAPI.getNodeTasks(n.node, 10).catch(() => []))
+    );
+    const tasks = perNode
+      .flat()
+      .sort((a, b) => (b.starttime || 0) - (a.starttime || 0))
+      .slice(0, limit);
+    res.json(tasks);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -13,6 +13,9 @@ const CONFIG_FILE = path.join(__dirname, '../../config.json');
 
 // Vérifier si la configuration initiale existe
 router.get('/check', async (req, res) => {
+  if (process.env.DEMO_MODE === 'true') {
+    return res.json({ configured: true, demo: true });
+  }
   try {
     await fs.access(CONFIG_FILE);
     const config = JSON.parse(await fs.readFile(CONFIG_FILE, 'utf-8'));

@@ -3,6 +3,9 @@ import https from 'https';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { resolveDemoEndpoint } from './demoData.js';
+
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -89,6 +92,15 @@ class ProxmoxAPI {
   }
 
   async request(method, endpoint, data = null) {
+    if (DEMO_MODE) {
+      const demo = resolveDemoEndpoint(method, endpoint);
+      if (demo !== undefined) return demo;
+      // Endpoint non simulé : on laisse volontairement échouer plutôt que
+      // d'appeler un vrai cluster — les routes appelantes gèrent déjà ce cas
+      // avec leurs .catch(() => []).
+      throw new Error(`DEMO_MODE: endpoint non simulé (${method} ${endpoint})`);
+    }
+
     if (!this.ticket) {
       await this.authenticate();
     }

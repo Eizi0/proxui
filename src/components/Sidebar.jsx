@@ -87,10 +87,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     <aside
       className={`${
         isOpen ? 'w-64' : 'w-20'
-      } bg-slate-800 border-r border-slate-700 transition-all duration-300 flex flex-col`}
+      } bg-graphite-900 border-r border-graphite-600 transition-all duration-300 flex flex-col`}
     >
       {/* Logo Section */}
-      <div className="p-4 border-b border-slate-700">
+      <div className="p-4 border-b border-graphite-600">
         {isOpen ? (
           <div className="flex items-center justify-center">
             <img src="/logo.png" alt="Proxmox UI" className="h-12 w-auto" />
@@ -106,7 +106,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       <div className="px-4 py-2 flex justify-end">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="text-slate-400 hover:text-white transition-colors"
+          className="text-graphite-300 hover:text-graphite-50 transition-colors"
         >
           <ChevronLeft
             size={20}
@@ -121,7 +121,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             {isOpen && section.title !== 'Dashboard' && (
               <button
                 onClick={() => toggleSection(section.title)}
-                className="flex items-center justify-between w-full px-2 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-300 transition-colors"
+                className="flex items-center justify-between w-full px-2 py-2 text-[10.5px] font-bold text-graphite-400 uppercase tracking-wider hover:text-graphite-200 transition-colors"
               >
                 <span>{translate(section.title, language)}</span>
                 <ChevronDown
@@ -141,10 +141,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                     to={item.path}
                     end={item.path === '/'}
                     className={({ isActive }) =>
-                      `flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-sm ${
+                      `flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors text-[13.5px] font-medium border-l-2 ${
                         isActive
-                          ? 'bg-proxmox-600 text-white'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                          ? 'bg-proxmox-500/10 text-proxmox-300 border-proxmox-500'
+                          : 'text-graphite-200 hover:text-graphite-50 hover:bg-graphite-800 border-transparent'
                       }`
                     }
                     title={!isOpen ? translate(item.label, language) : ''}
@@ -159,8 +159,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         ))}
       </nav>
 
-      <div className="p-4 border-t border-slate-700">
-        <div className={`${isOpen ? 'text-center' : ''} text-xs text-slate-500`}>
+      <div className="p-4 border-t border-graphite-600">
+        <div className={`${isOpen ? 'text-center' : ''} text-xs text-graphite-400 font-mono`}>
           {isOpen ? 'ProxUI v1.0.0' : 'v1.0'}
         </div>
       </div>
